@@ -1,9 +1,9 @@
-# RepoGuardian AI — Complete Run Guide
+# CodeCognition AI — Complete Run Guide
 
 ## Project Structure
 
 ```
-repoguardian-new/
+CodeCognition-new/
 ├── frontend/          ← React app (Vite + Tailwind)
 │   ├── src/
 │   │   ├── pages/     ← Dashboard, Repositories, RepoDetail, AgentLogs, Settings, Login
@@ -52,7 +52,7 @@ Open: **http://localhost:5173**
 ### Step 4 — Connect GitHub (to see your real repos)
 1. Go to **https://github.com/settings/tokens**
 2. Click "Generate new token (classic)"
-3. Give it a name like "RepoGuardian"
+3. Give it a name like "CodeCognition"
 4. Check these scopes: ✅ `repo` ✅ `read:user`
 5. Click Generate → copy the token (starts with `ghp_`)
 6. In the app: **Login** → **GitHub tab** → paste token → Connect
@@ -139,7 +139,7 @@ INFO:     Started reloader process
 Test it works:
 ```bash
 curl http://localhost:8000/ping
-# Response: {"status":"online","service":"RepoGuardian AI","ts":"..."}
+# Response: {"status":"online","service":"CodeCognition AI","ts":"..."}
 ```
 
 #### Step 5 — Run the frontend (in a separate terminal)
@@ -224,3 +224,4 @@ back to demo data so you can still show all features.
    - **AI Fix Suggestions tab** → Auto-generated code fixes
 8. Go to **Agent Logs** page → show live streaming agent activity
 9. Go to **Settings** → show GitHub integration panel
+

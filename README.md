@@ -1,4 +1,4 @@
-# RepoGuardian AI — Complete Setup Guide
+# CodeCognition AI — Complete Setup Guide
 
 ## What's New in v2.0
 
@@ -20,7 +20,14 @@ cp .env.example .env
 npm run dev
 ```
 
-### 2. Backend Setup (Optional — frontend works with demo data)
+### 2. Backend Setup (Java - Eclipse IDE)
+```bash
+cd backend-java
+mvn clean compile
+# Then open in Eclipse IDE and run CodeCognitionApplication.java
+```
+
+### 3. Python Backend (Legacy - Optional)
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -53,3 +60,4 @@ VITE_API_URL=http://localhost:8000
 - **AI**: Claude API (claude-sonnet-4-20250514) for repository analysis
 - **GitHub**: GitHub REST API v3 (via Personal Access Token)
 - **Backend**: FastAPI + Python (optional)
+

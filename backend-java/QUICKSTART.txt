@@ -1,0 +1,28 @@
+# Quick Start Script for Java Backend
+
+## To run from PowerShell:
+
+1. Navigate to backend-java folder:
+   cd backend-java
+
+2. Build and run with Maven:
+   mvn clean spring-boot:run
+
+3. Or build the JAR first:
+   mvn clean package
+   java -jar target/repoguardian-ai-3.3.0.jar
+
+4. Access the API:
+   http://localhost:8000/ping
+
+## To run from Eclipse:
+
+1. Import the project (File > Import > Existing Maven Projects)
+2. Browse to: C:\Users\sahit\AppData\Local\Temp\RepoGuardian-AI\backend-java
+3. Right-click project > Run As > Java Application
+4. Select RepoGuardianApplication
+
+## Frontend Integration:
+
+Update frontend/.env to:
+VITE_API_URL=http://localhost:8000
