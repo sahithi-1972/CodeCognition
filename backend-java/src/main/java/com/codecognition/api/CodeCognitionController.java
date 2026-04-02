@@ -32,7 +32,7 @@ public class CodeCognitionController {
     public ResponseEntity<Map<String, String>> analyze(@RequestBody AnalyzeRequest req) {
         Map<String, String> response = new HashMap<>();
         response.put("status", "queued");
-        response.put("repo", req.getRepo_url());
+        response.put("repo", req.repo_url);
         // In a real app, this would be background
         return ResponseEntity.ok(response);
     }
@@ -40,14 +40,14 @@ public class CodeCognitionController {
     @PostMapping("/analyze-repo")
     public ResponseEntity<AnalysisResult> analyzeRepo(@RequestBody RepoAnalyzeRequest req) {
         // Handle legacy repo_name field
-        if (req.getRepo_name() != null && "unknown".equals(req.getOwner())) {
-            String[] parts = req.getRepo_name().split("/");
-            req.setOwner(parts.length >= 2 ? parts[0] : "unknown");
-            req.setRepo(parts.length >= 2 ? parts[1] : req.getRepo_name());
+        if (req.repo_name != null && "unknown".equals(req.owner)) {
+            String[] parts = req.repo_name.split("/");
+            req.owner = parts.length >= 2 ? parts[0] : "unknown";
+            req.repo = parts.length >= 2 ? parts[1] : req.repo_name;
         }
 
         AnalysisResult result = analysisService.analyzeRepository(req);
-        cache.put(req.getOwner() + "/" + req.getRepo(), result);
+        cache.put(req.owner + "/" + req.repo, result);
         return ResponseEntity.ok(result);
     }
 
@@ -61,11 +61,11 @@ public class CodeCognitionController {
             AnalysisResult r = cache.get(repo_url);
             response.put("status", "complete");
             response.put("repo", repo_url);
-            response.put("health_score", r.getHealth_score());
-            response.put("findings", r.getFindings());
-            response.put("summary", r.getSummary());
-            response.put("agent_logs", r.getAgent_logs());
-            response.put("grade", gradeScore(r.getHealth_score()));
+            response.put("health_score", r.health_score);
+            response.put("findings", r.findings);
+            response.put("summary", r.summary);
+            response.put("agent_logs", r.agent_logs);
+            response.put("grade", gradeScore(r.health_score));
             response.put("last_updated", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         } else {
             response.put("status", "no_analysis");
@@ -81,7 +81,7 @@ public class CodeCognitionController {
     @PostMapping("/simulation")
     public ResponseEntity<Map<String, Object>> runSimulation(@RequestBody SimulationRequest req) {
         Map<String, Object> response = new HashMap<>();
-        response.put("changed_file", req.getChanged_file());
+        response.put("changed_file", req.changed_file);
         response.put("direct_impact", new ArrayList<>());
         response.put("indirect_impact", new ArrayList<>());
         response.put("safe_files", new ArrayList<>());

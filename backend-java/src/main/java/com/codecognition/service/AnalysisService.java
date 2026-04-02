@@ -105,18 +105,18 @@ public class AnalysisService {
         List<Map<String, Object>> agentLogs = generateAgentLogs(findings, healthScore);
 
         AnalysisResult result = new AnalysisResult();
-        result.setHealth_score(healthScore);
-        result.setSecurity_score(secScore);
-        result.setQuality_score(qualScore);
-        result.setDependency_score(depScore);
-        result.setDocumentation_score(docScore);
-        result.setStatus(status);
-        result.setSummary(summary);
-        result.setFindings(findings);
-        result.setQuantum_risk(quantumRisk);
-        result.setDigital_twin(digitalTwin);
-        result.setAgent_logs(agentLogs);
-        result.set_engine("rule-based");
+        result.health_score = healthScore;
+        result.security_score = secScore;
+        result.quality_score = qualScore;
+        result.dependency_score = depScore;
+        result.documentation_score = docScore;
+        result.status = status;
+        result.summary = summary;
+        result.findings = findings;
+        result.quantum_risk = quantumRisk;
+        result.digital_twin = digitalTwin;
+        result.agent_logs = agentLogs;
+        result._engine = "rule-based";
 
         return result;
     }
@@ -137,13 +137,13 @@ public class AnalysisService {
                 Matcher m = p.matcher(content);
                 if (m.find()) {
                     Finding f = new Finding();
-                    f.setId("f" + (++findingId[0]));
-                    f.setSeverity(sp.severity);
-                    f.setCategory("Security");
-                    f.setTitle(sp.title);
-                    f.setDescription(sp.description + " Found in " + fileName);
-                    f.setFile(fileName);
-                    f.setFix(sp.fix);
+                    f.id = "f" + (++findingId[0]);
+                    f.severity = sp.severity;
+                    f.category = "Security";
+                    f.title = sp.title;
+                    f.description = sp.description + " Found in " + fileName;
+                    f.file = fileName;
+                    f.fix = sp.fix;
                     findings.add(f);
                 }
             }
@@ -162,13 +162,13 @@ public class AnalysisService {
                     String ver = m.group(1);
                     if (!ver.startsWith(info[0])) {
                         Finding f = new Finding();
-                        f.setId("f" + (++findingId[0]));
-                        f.setSeverity(info[2]);
-                        f.setCategory("Dependency");
-                        f.setTitle("Vulnerable: " + pkg + "==" + ver);
-                        f.setDescription(pkg + "==" + ver + " has security issues (" + info[1] + ")");
-                        f.setFile("requirements.txt");
-                        f.setFix("Upgrade: " + pkg + ">=" + info[0]);
+                        f.id = "f" + (++findingId[0]);
+                        f.severity = info[2];
+                        f.category = "Dependency";
+                        f.title = "Vulnerable: " + pkg + "==" + ver;
+                        f.description = pkg + "==" + ver + " has security issues (" + info[1] + ")";
+                        f.file = "requirements.txt";
+                        f.fix = "Upgrade: " + pkg + ">=" + info[0];
                         findings.add(f);
                     }
                 }
@@ -182,13 +182,13 @@ public class AnalysisService {
                 Matcher m = p.matcher(fileContext);
                 if (m.find()) {
                     Finding f = new Finding();
-                    f.setId("f" + (++findingId[0]));
-                    f.setSeverity(info[2]);
-                    f.setCategory("Dependency");
-                    f.setTitle("Vulnerable npm: " + pkg);
-                    f.setDescription(pkg + " has known issues (" + info[1] + ")");
-                    f.setFile("package.json");
-                    f.setFix("npm install " + pkg + "@latest");
+                    f.id = "f" + (++findingId[0]);
+                    f.severity = info[2];
+                    f.category = "Dependency";
+                    f.title = "Vulnerable npm: " + pkg;
+                    f.description = pkg + " has known issues (" + info[1] + ")";
+                    f.file = "package.json";
+                    f.fix = "npm install " + pkg + "@latest";
                     findings.add(f);
                 }
             });
@@ -196,43 +196,43 @@ public class AnalysisService {
     }
 
     private void scanStructure(RepoAnalyzeRequest req, List<Finding> findings, int[] findingId) {
-        boolean hasTests = req.is_empty || req.is_empty == false && req.has_tests;
+        boolean hasTests = !req.is_empty && req.has_tests;
         boolean hasCI = req.has_ci;
         boolean hasReadme = req.has_readme;
 
         if (!hasTests && !req.tree.isEmpty()) {
             Finding f = new Finding();
-            f.setId("f" + (++findingId[0]));
-            f.setSeverity("MEDIUM");
-            f.setCategory("Quality");
-            f.setTitle("No Automated Tests Detected");
-            f.setDescription(req.owner + "/" + req.repo + " has no test files");
-            f.setFile("Repository root");
-            f.setFix("Create a tests/ directory");
+            f.id = "f" + (++findingId[0]);
+            f.severity = "MEDIUM";
+            f.category = "Quality";
+            f.title = "No Automated Tests Detected";
+            f.description = req.owner + "/" + req.repo + " has no test files";
+            f.file = "Repository root";
+            f.fix = "Create a tests/ directory";
             findings.add(f);
         }
 
         if (!hasCI && !req.tree.isEmpty()) {
             Finding f = new Finding();
-            f.setId("f" + (++findingId[0]));
-            f.setSeverity("LOW");
-            f.setCategory("Quality");
-            f.setTitle("No CI/CD Pipeline Found");
-            f.setDescription("No GitHub Actions detected");
-            f.setFile("Repository root");
-            f.setFix("Add .github/workflows/ci.yml");
+            f.id = "f" + (++findingId[0]);
+            f.severity = "LOW";
+            f.category = "Quality";
+            f.title = "No CI/CD Pipeline Found";
+            f.description = "No GitHub Actions detected";
+            f.file = "Repository root";
+            f.fix = "Add .github/workflows/ci.yml";
             findings.add(f);
         }
 
         if (!hasReadme && !req.tree.isEmpty()) {
             Finding f = new Finding();
-            f.setId("f" + (++findingId[0]));
-            f.setSeverity("LOW");
-            f.setCategory("Documentation");
-            f.setTitle("Missing README Documentation");
-            f.setDescription("No README found");
-            f.setFile("Repository root");
-            f.setFix("Create README.md");
+            f.id = "f" + (++findingId[0]);
+            f.severity = "LOW";
+            f.category = "Documentation";
+            f.title = "Missing README Documentation";
+            f.description = "No README found";
+            f.file = "Repository root";
+            f.fix = "Create README.md";
             findings.add(f);
         }
     }
@@ -240,8 +240,8 @@ public class AnalysisService {
     private int calculateSecurityScore(List<Finding> findings) {
         int deduction = 0;
         for (Finding f : findings) {
-            if ("Security".equals(f.getCategory())) {
-                switch (f.getSeverity()) {
+            if ("Security".equals(f.category)) {
+                switch (f.severity) {
                     case "CRITICAL": deduction += 20; break;
                     case "HIGH": deduction += 12; break;
                     case "MEDIUM": deduction += 6; break;
@@ -256,8 +256,8 @@ public class AnalysisService {
         int base = req.has_tests ? 80 : 55;
         int deduction = 0;
         for (Finding f : findings) {
-            if ("Quality".equals(f.getCategory())) {
-                switch (f.getSeverity()) {
+            if ("Quality".equals(f.category)) {
+                switch (f.severity) {
                     case "CRITICAL": deduction += 20; break;
                     case "HIGH": deduction += 12; break;
                     case "MEDIUM": deduction += 6; break;
@@ -272,8 +272,8 @@ public class AnalysisService {
         int base = req.has_ci ? 85 : 75;
         int deduction = 0;
         for (Finding f : findings) {
-            if ("Dependency".equals(f.getCategory())) {
-                switch (f.getSeverity()) {
+            if ("Dependency".equals(f.category)) {
+                switch (f.severity) {
                     case "CRITICAL": deduction += 20; break;
                     case "HIGH": deduction += 12; break;
                     case "MEDIUM": deduction += 6; break;
@@ -288,8 +288,8 @@ public class AnalysisService {
         int base = req.has_readme ? 70 : 45;
         int deduction = 0;
         for (Finding f : findings) {
-            if ("Documentation".equals(f.getCategory())) {
-                switch (f.getSeverity()) {
+            if ("Documentation".equals(f.category)) {
+                switch (f.severity) {
                     case "CRITICAL": deduction += 20; break;
                     case "HIGH": deduction += 12; break;
                     case "MEDIUM": deduction += 6; break;
@@ -302,8 +302,8 @@ public class AnalysisService {
 
     private String generateSummary(RepoAnalyzeRequest req, List<Finding> findings, int healthScore) {
         int total = findings.size();
-        int critical = (int) findings.stream().filter(f -> "CRITICAL".equals(f.getSeverity())).count();
-        int high = (int) findings.stream().filter(f -> "HIGH".equals(f.getSeverity())).count();
+        int critical = (int) findings.stream().filter(f -> "CRITICAL".equals(f.severity)).count();
+        int high = (int) findings.stream().filter(f -> "HIGH".equals(f.severity)).count();
 
         if (total == 0) {
             return req.owner + "/" + req.repo + " passed all automated checks with no issues detected.";
@@ -314,9 +314,9 @@ public class AnalysisService {
     private List<Map<String, Object>> generateQuantumRisk(List<Finding> findings, List<String> tree) {
         Map<String, Double> riskMap = new HashMap<>();
         for (Finding f : findings) {
-            String file = f.getFile().split(":")[0];
+            String file = f.file.split(":")[0];
             double weight = 0;
-            switch (f.getSeverity()) {
+            switch (f.severity) {
                 case "CRITICAL": weight = 0.4; break;
                 case "HIGH": weight = 0.25; break;
                 case "MEDIUM": weight = 0.15; break;
@@ -343,8 +343,8 @@ public class AnalysisService {
 
     private Map<String, Object> generateDigitalTwin(List<Finding> findings, List<String> tree) {
         List<String> criticalFiles = findings.stream()
-            .filter(f -> "CRITICAL".equals(f.getSeverity()) || "HIGH".equals(f.getSeverity()))
-            .map(f -> f.getFile().split(":")[0])
+            .filter(f -> "CRITICAL".equals(f.severity) || "HIGH".equals(f.severity))
+            .map(f -> f.file.split(":")[0])
             .distinct()
             .limit(5)
             .collect(Collectors.toList());
@@ -388,21 +388,21 @@ public class AnalysisService {
 
     private AnalysisResult getEmptyResult(RepoAnalyzeRequest req) {
         AnalysisResult result = new AnalysisResult();
-        result.setHealth_score(100);
-        result.setSecurity_score(100);
-        result.setQuality_score(100);
-        result.setDependency_score(100);
-        result.setDocumentation_score(req.has_readme ? 70 : 20);
-        result.setStatus("Healthy");
-        result.setSummary(req.owner + "/" + req.repo + " is empty — no source files to analyse.");
-        result.setFindings(new ArrayList<>());
-        result.setQuantum_risk(new ArrayList<>());
+        result.health_score = 100;
+        result.security_score = 100;
+        result.quality_score = 100;
+        result.dependency_score = 100;
+        result.documentation_score = req.has_readme ? 70 : 20;
+        result.status = "Healthy";
+        result.summary = req.owner + "/" + req.repo + " is empty — no source files to analyse.";
+        result.findings = new ArrayList<>();
+        result.quantum_risk = new ArrayList<>();
 
         Map<String, Object> dt = new HashMap<>();
         dt.put("critical_files", new ArrayList<>());
         dt.put("dependency_map", new HashMap<>());
         dt.put("impact_summary", "No files yet.");
-        result.setDigital_twin(dt);
+        result.digital_twin = dt;
 
         List<Map<String, Object>> logs = new ArrayList<>();
         Map<String, Object> log = new HashMap<>();
@@ -410,8 +410,8 @@ public class AnalysisService {
         log.put("msg", "Repository appears to be empty.");
         log.put("status", "warn");
         logs.add(log);
-        result.setAgent_logs(logs);
-        result.set_engine("empty-repo");
+        result.agent_logs = logs;
+        result._engine = "empty-repo";
 
         return result;
     }

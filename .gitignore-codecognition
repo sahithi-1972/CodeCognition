@@ -1,0 +1,30 @@
+# Python backend (exclude)
+/backend/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+
+# Build outputs
+target/
+dist/
+build/
+*.jar
+*.war
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.DS_Store
