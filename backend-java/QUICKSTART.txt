@@ -10,7 +10,7 @@
 
 3. Or build the JAR first:
    mvn clean package
-   java -jar target/repoguardian-ai-3.3.0.jar
+   java -jar target/codecognition-ai-3.3.0.jar
 
 4. Access the API:
    http://localhost:8000/ping
@@ -18,9 +18,9 @@
 ## To run from Eclipse:
 
 1. Import the project (File > Import > Existing Maven Projects)
-2. Browse to: C:\Users\sahit\AppData\Local\Temp\RepoGuardian-AI\backend-java
+2. Browse to: C:\Users\sahit\AppData\Local\Temp\CodeCognition-AI\backend-java
 3. Right-click project > Run As > Java Application
-4. Select RepoGuardianApplication
+4. Select CodeCognitionApplication
 
 ## Frontend Integration:
 

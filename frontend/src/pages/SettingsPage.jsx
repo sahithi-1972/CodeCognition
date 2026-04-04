@@ -77,7 +77,7 @@ export default function SettingsPage() {
   return (
     <div className="bg-[#050810] bg-grid min-h-screen">
       <header className="sticky top-0 z-20 border-b border-[#1a2240] bg-[#050810]/95 backdrop-blur-sm px-6 py-3.5">
-        <div className="text-[10px] font-mono text-slate-600 tracking-widest">REPOGUARDIAN AI › SETTINGS</div>
+        <div className="text-[10px] font-mono text-slate-600 tracking-widest">CODECOGNITION AI › SETTINGS</div>
         <h1 className="text-base font-display font-bold text-slate-100 tracking-wider mt-0.5">Settings</h1>
       </header>
 
@@ -206,7 +206,7 @@ export default function SettingsPage() {
 
           {/* About */}
           <motion.div variants={panelV} className="text-center py-4">
-            <div className="text-xs font-mono text-slate-600">RepoGuardian AI v2.4.1 · Built with Claude AI</div>
+            <div className="text-xs font-mono text-slate-600">CodeCognition AI v2.4.1 · Built with Claude AI</div>
             <div className="text-xs font-mono text-slate-700 mt-1">Autonomous Multi-Agent Repository Intelligence</div>
           </motion.div>
 

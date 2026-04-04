@@ -40,7 +40,7 @@ export default function Sidebar() {
             <Shield style={{ width: 14, height: 14, color: '#a78bfa' }} />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>RepoGuardian</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>CodeCognition</div>
             <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'monospace' }}>AI v2.4</div>
           </div>
         </div>

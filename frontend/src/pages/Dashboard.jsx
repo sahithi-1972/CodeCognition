@@ -117,7 +117,7 @@ export default function Dashboard() {
       {/* Header */}
       <header style={{ position:'sticky', top:0, zIndex:20, background:'var(--bg-2)', borderBottom:'1px solid var(--border)', padding:'10px 24px', display:'flex', alignItems:'center', gap:12 }}>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:11, color:'var(--text-3)', fontFamily:'monospace', textTransform:'uppercase', letterSpacing:'0.08em' }}>RepoGuardian AI › Dashboard</div>
+          <div style={{ fontSize:11, color:'var(--text-3)', fontFamily:'monospace', textTransform:'uppercase', letterSpacing:'0.08em' }}>CodeCognition AI › Dashboard</div>
           <h1 style={{ margin:0, fontSize:16, fontWeight:600, color:'var(--text)' }}>Dashboard</h1>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>

@@ -91,7 +91,7 @@ function AgentLogPanel({ logs, triggerInfo, onDone }) {
       {/* Terminal prompt */}
       <div style={{ padding:'5px 14px', background:'var(--bg)', borderBottom:'1px solid var(--border)', fontFamily:'monospace', fontSize:12, flexShrink:0 }}>
         <span style={{ color:'#3fb950' }}>$</span>
-        <span style={{ color:'var(--text-2)', marginLeft:6 }}>repoguardian --analyze --trigger=commit --agents=4</span>
+        <span style={{ color:'var(--text-2)', marginLeft:6 }}>codecognition --analyze --trigger=commit --agents=4</span>
       </div>
 
       {/* Log rows */}

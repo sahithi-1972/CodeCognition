@@ -181,7 +181,7 @@ export default function Login() {
                 <Shield className="w-5 h-5 text-cyan-400" />
               </div>
               <div>
-                <div className="text-sm font-display font-bold text-slate-100 tracking-widest">REPOGUARDIAN</div>
+                <div className="text-sm font-display font-bold text-slate-100 tracking-widest">CODECOGNITION</div>
                 <div className="text-[10px] font-mono text-cyan-400/60 tracking-widest">AUTONOMOUS AI SYSTEM</div>
               </div>
             </div>
@@ -391,7 +391,7 @@ export default function Login() {
               )}
 
               <p className="text-center text-xs text-slate-600 font-mono mt-6">
-                Protected by RepoGuardian AI Security Engine™
+                Protected by CodeCognition AI Security Engine™
               </p>
             </div>
           </div>

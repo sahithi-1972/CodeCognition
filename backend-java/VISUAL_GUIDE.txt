@@ -5,7 +5,7 @@
 📂 PROJECT STRUCTURE (in Eclipse)
 ════════════════════════════════════════════════════════════════════════════════
 
-repoguardian-ai/
+codecognition-ai/
 │
 ├── 📄 pom.xml
 │   └─ Maven configuration (dependencies, version, plugins)
@@ -13,11 +13,11 @@ repoguardian-ai/
 ├── 📄 src/
 │   └── main/
 │       ├── java/
-│       │   └── com/repoguardian/
-│       │       ├── 🚀 RepoGuardianApplication.java          [MAIN ENTRY POINT]
+│       │   └── com/codecognition/
+│       │       ├── 🚀 CodeCognitionApplication.java          [MAIN ENTRY POINT]
 │       │       │
 │       │       ├── 🔌 api/
-│       │       │   └── RepoGuardianController.java          [REST ENDPOINTS]
+│       │       │   └── CodeCognitionController.java          [REST ENDPOINTS]
 │       │       │       • GET    /ping
 │       │       │       • POST   /analyze-repo
 │       │       │       • GET    /health-status
@@ -55,7 +55,7 @@ HTTP Request (from Frontend)
         ↓
         ▼
 ┌─────────────────────────────────────────┐
-│ RepoGuardianController (HTTP Layer)     │
+│ CodeCognitionController (HTTP Layer)     │
 │ @RestController @RequestMapping("/")    │
 │                                         │
 │ Receives: POST /analyze-repo            │
@@ -103,7 +103,7 @@ STEP 2: Import Project
 ──────────────────────
 File → Import → Existing Maven Projects
 ├─ Click Browse
-├─ Navigate to: C:\Users\sahit\AppData\Local\Temp\RepoGuardian-AI\backend-java
+├─ Navigate to: C:\Users\sahit\AppData\Local\Temp\CodeCognition-AI\backend-java
 ├─ Select folder
 └─ Click Finish
 
@@ -112,7 +112,7 @@ File → Import → Existing Maven Projects
 
 STEP 3: Run Application
 ───────────────────────
-1. Open: RepoGuardianApplication.java (in src/main/java)
+1. Open: CodeCognitionApplication.java (in src/main/java)
 2. Click ▶ RUN button (green play icon)
 3. Or: Right-click → Run As → Java Application
 
@@ -130,7 +130,7 @@ Open your browser:
 You should see:
     {
       "status": "online",
-      "service": "RepoGuardian AI v3.3 (Java)",
+      "service": "CodeCognition AI v3.3 (Java)",
       "ts": "2026-04-02T12:00:00.123456"
     }
 
@@ -198,7 +198,7 @@ Ctrl + 1                Quick fix (Eclipse suggestions)
 
 Example: Add new endpoint /custom
 
-1. Open: RepoGuardianController.java
+1. Open: CodeCognitionController.java
 
 2. Add method:
    ┌──────────────────────────────────────┐
@@ -222,7 +222,7 @@ Example: Add new endpoint /custom
 🐛 TROUBLESHOOTING
 ════════════════════════════════════════════════════════════════════════════════
 
-Problem: "Cannot find RepoGuardianApplication"
+Problem: "Cannot find CodeCognitionApplication"
 Solution: Right-click project → Maven → Update Project → F5 refresh
 
 Problem: "Port 8000 already in use"

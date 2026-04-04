@@ -18,7 +18,7 @@ function Loader() {
           <Shield className="w-6 h-6 text-cyan-400" />
         </div>
       </div>
-      <div className="text-xs font-mono text-slate-600 tracking-widest animate-pulse">INITIALISING REPOGUARDIAN...</div>
+      <div className="text-xs font-mono text-slate-600 tracking-widest animate-pulse">INITIALISING CODECOGNITION...</div>
     </div>
   );
 }

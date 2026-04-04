@@ -116,7 +116,7 @@ export default function Repositories() {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-[#1a2240] bg-[#050810]/95 backdrop-blur-sm px-6 py-3.5 flex items-center gap-4">
         <div>
-          <div className="text-[10px] font-mono text-slate-600 tracking-widest">REPOGUARDIAN AI › MY REPOSITORIES</div>
+          <div className="text-[10px] font-mono text-slate-600 tracking-widest">CODECOGNITION AI › MY REPOSITORIES</div>
           <h1 className="text-base font-display font-bold text-slate-100 tracking-wider mt-0.5">Repositories</h1>
         </div>
         <div className="ml-auto flex items-center gap-2">

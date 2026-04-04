@@ -440,7 +440,7 @@ export default function RepoDetail() {
           <button onClick={() => navigate('/repositories')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 0 }}>
             <ArrowLeft style={{ width: 16, height: 16 }} />
           </button>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'monospace' }}>REPOGUARDIAN AI › REPOSITORIES › {owner}/{repo}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'monospace' }}>CODECOGNITION AI › REPOSITORIES › {owner}/{repo}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <GitFork style={{ width: 16, height: 16, color: 'var(--text-3)' }} />
