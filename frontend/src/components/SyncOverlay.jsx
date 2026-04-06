@@ -116,7 +116,7 @@ export default function SyncOverlay({ userName, onComplete }) {
             <h2 className="text-xl font-display font-bold text-slate-100 tracking-wider">
               Welcome, <span className="text-cyan-400">{firstName}</span>
             </h2>
-            <p className="text-[11px] font-mono text-slate-500 tracking-[0.25em] mt-1 uppercase">Syncing with RepoGuardian AI</p>
+            <p className="text-[11px] font-mono text-slate-500 tracking-[0.25em] mt-1 uppercase">Syncing with CodeCognition AI</p>
           </div>
 
           <div className="space-y-3 mb-6 min-h-[160px]">

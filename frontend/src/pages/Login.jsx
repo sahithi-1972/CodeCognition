@@ -1,22 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import {
-  Shield, Lock, Eye, EyeOff, ArrowRight, GitBranch,
-  Activity, Zap, AlertCircle, Github, Key, CheckCircle
-} from 'lucide-react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Lock, Eye, EyeOff, Github, Mail, CheckCircle, AlertCircle, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import SyncOverlay from '../components/SyncOverlay';
 import { fetchGitHubUser } from '../hooks/useGitHub';
+import SyncOverlay from '../components/SyncOverlay';
 
-const FEATURES = [
-  { icon: Shield,    text: 'Autonomous Vulnerability Detection' },
-  { icon: Activity,  text: 'Real-time Code Health Monitoring'   },
-  { icon: Zap,       text: 'AI-Powered Auto-Fix Suggestions'    },
-  { icon: GitBranch, text: 'Multi-Repository Management'        },
-];
-
-// ── Google OAuth via Google Identity Services (no npm package needed) ──
 function useGoogleAuth(onSuccess) {
   const initialized = useRef(false);
 
@@ -24,29 +13,27 @@ function useGoogleAuth(onSuccess) {
     if (initialized.current) return;
     initialized.current = true;
 
-    // Load Google Identity Services script
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
     script.onload = () => {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') return; // skip if not configured
+      if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') return;
       window.google?.accounts?.id?.initialize({
         client_id: clientId,
         callback: (response) => {
-          // Decode the JWT credential
           try {
             const payload = JSON.parse(atob(response.credential.split('.')[1]));
             onSuccess({
-              name:           payload.name,
-              email:          payload.email,
-              picture:        payload.picture,
-              given_name:     payload.given_name,
+              name: payload.name,
+              email: payload.email,
+              picture: payload.picture,
+              given_name: payload.given_name,
               verified_email: payload.email_verified,
             });
-          } catch (e) {
-            console.error('Google token decode failed', e);
+          } catch (error) {
+            console.error('Google token decode failed', error);
           }
         },
       });
@@ -57,35 +44,461 @@ function useGoogleAuth(onSuccess) {
   const signIn = useCallback(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
-      alert('Google login requires VITE_GOOGLE_CLIENT_ID in your .env file.\n\nUse Email login or GitHub login instead for the demo.');
-      return;
+      alert('Google login requires VITE_GOOGLE_CLIENT_ID in your .env file. Use email login or GitHub login instead.');
+      return false;
     }
-    window.google?.accounts?.id?.prompt();
+    if (!window.google?.accounts?.id?.prompt) {
+      alert('Google login is still loading. Please try again in a moment.');
+      return false;
+    }
+    window.google.accounts.id.prompt();
+    return true;
   }, []);
 
   return { signIn };
+}
+
+function useMicrosoftAuth(onSuccess) {
+  const initialized = useRef(false);
+  const msalInstance = useRef(null);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const script = document.createElement('script');
+    script.src = 'https://alcdn.msauth.net/browser/2.40.0/js/msal-browser.min.js';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
+      if (!clientId || clientId === 'YOUR_MICROSOFT_CLIENT_ID') return;
+      const PublicClientApplication = window.msal?.PublicClientApplication;
+      if (!PublicClientApplication) return;
+
+      msalInstance.current = new PublicClientApplication({
+        auth: {
+          clientId,
+          redirectUri: window.location.origin,
+        },
+        cache: {
+          cacheLocation: 'localStorage',
+          storeAuthStateInCookie: false,
+        },
+      });
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  const signIn = useCallback(async () => {
+    const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
+    if (!clientId || clientId === 'YOUR_MICROSOFT_CLIENT_ID') {
+      alert('Microsoft login requires VITE_MICROSOFT_CLIENT_ID in your .env file. Use email signup or Google signup instead.');
+      return false;
+    }
+    if (!msalInstance.current) {
+      alert('Microsoft login is still loading. Please try again in a moment.');
+      return false;
+    }
+
+    try {
+      const response = await msalInstance.current.loginPopup({
+        scopes: ['openid', 'profile', 'email'],
+      });
+      const account = response.account || msalInstance.current.getAllAccounts()[0];
+      if (!account) throw new Error('No Microsoft account returned');
+
+      onSuccess({
+        name: account.name || account.username,
+        email: account.username,
+        picture: null,
+        given_name: account.name ? account.name.split(' ')[0] : account.username.split('@')[0],
+        verified_email: true,
+      });
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }, [onSuccess]);
+
+  return { signIn };
+}
+
+function GoogleBrandIcon({ className }) {
+  return (
+    <svg viewBox="0 0 533.5 544.3" className={className} aria-hidden="true">
+      <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-36.3-4.3-53.6H272v101.5h146.9c-6.3 34-25.4 62.8-54.3 82v68h87.7c51.3-47.2 80.2-116.7 80.2-197.9z" />
+      <path fill="#34A853" d="M272 544.3c73.7 0 135.6-24.4 180.8-66.3l-87.7-68c-24.4 16.3-55.7 26-93.1 26-71.5 0-132.1-48.3-153.8-113.2h-90.7v70.9c45.7 90 140.2 150.6 244.5 150.6z" />
+      <path fill="#FBBC05" d="M118.2 322.4c-10.4-31.6-10.4-65.8 0-97.4v-70.9h-90.7c-39.2 77.3-39.2 169.4 0 246.7l90.7-78.4z" />
+      <path fill="#EA4335" d="M272 107.1c39.8 0 75.6 13.7 103.8 40.5l77.8-77.8C412.5 24.5 343.2 0 272 0 167.7 0 73.2 60.6 27.5 150.6l90.7 70.9C139.9 155.4 200.5 107.1 272 107.1z" />
+    </svg>
+  );
+}
+
+function MicrosoftBrandIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path fill="#F25022" d="M1 1h10v10H1z" />
+      <path fill="#7FBA00" d="M13 1h10v10H13z" />
+      <path fill="#00A4EF" d="M1 13h10v10H1z" />
+      <path fill="#FFB900" d="M13 13h10v10H13z" />
+    </svg>
+  );
+}
+
+function AuthTabs({ activeTab, setActiveTab }) {
+  return (
+    <div className="flex rounded-3xl bg-slate-900/50 p-1 mb-6">
+      <button
+        onClick={() => setActiveTab('email')}
+        className={`flex-1 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+          activeTab === 'email'
+            ? 'bg-cyan-500 text-slate-950'
+            : 'text-slate-400 hover:text-slate-100'
+        }`}
+      >
+        Email
+      </button>
+      <button
+        onClick={() => setActiveTab('github')}
+        className={`flex-1 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+          activeTab === 'github'
+            ? 'bg-cyan-500 text-slate-950'
+            : 'text-slate-400 hover:text-slate-100'
+        }`}
+      >
+        GitHub
+      </button>
+    </div>
+  );
+}
+
+function AuthModeToggle({ authMode, setAuthMode }) {
+  return (
+    <div className="flex rounded-3xl bg-slate-900/50 p-1 mb-6">
+      {/* <button
+        type="button"
+        onClick={() => setAuthMode('signin')}
+        className={`flex-1 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+          authMode === 'signin'
+            ? 'bg-cyan-500 text-slate-950'
+            : 'text-slate-400 hover:text-slate-100'
+        }`}
+      >
+        Sign In
+      </button> */}
+    </div>
+  );
+}
+
+function SignupForm({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  showPass,
+  setShowPass,
+  error,
+  loading,
+  googleLoading,
+  msLoading,
+  onEmailSignUp,
+  onGoogleSignup,
+  onMicrosoftSignup,
+  hasGoogleClientId,
+  hasMicrosoftClientId,
+  onSwitchToSignIn,
+}) {
+  return (
+    <div className="space-y-5">
+      {error && (
+        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <AlertCircle className="inline h-4 w-4 mr-2 align-text-bottom" />
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={onEmailSignUp} className="space-y-4">
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-200">Email</label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              className="w-full rounded-3xl border border-slate-800/80 bg-slate-950/90 px-4 py-3 pl-12 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400/70"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-200">Password</label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a secure password"
+              className="w-full rounded-3xl border border-slate-800/80 bg-slate-950/90 px-4 py-3 pl-12 pr-12 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400/70"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-100"
+            >
+              {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+        >
+          {loading ? 'Creating account...' : 'Sign Up with Email'}
+        </button>
+      </form>
+
+      {/* <div className="relative">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-slate-800" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase tracking-[0.3em] text-slate-500">
+          Or continue with
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        <button
+          type="button"
+          onClick={onGoogleSignup}
+          disabled={googleLoading || !hasGoogleClientId}
+          className="flex items-center justify-center gap-3 rounded-full border border-slate-700 bg-slate-900/90 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50 disabled:opacity-60"
+        >
+          <GoogleBrandIcon className="h-5 w-5" />
+          {googleLoading ? 'Continue with Google…' : 'Continue with Google'}
+        </button>
+
+        <button
+          type="button"
+          onClick={onMicrosoftSignup}
+          disabled={msLoading || !hasMicrosoftClientId}
+          className="flex items-center justify-center gap-3 rounded-full border border-slate-700 bg-slate-900/90 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50 disabled:opacity-60"
+        >
+          <MicrosoftBrandIcon className="h-5 w-5" />
+          {msLoading ? 'Continue with Microsoft…' : 'Continue with Microsoft'}
+        </button>
+      </div> */}
+
+      <div className="pt-4 text-center text-sm text-slate-400">
+        Already have an account?{' '}
+        <button type="button" onClick={onSwitchToSignIn} className="font-semibold text-cyan-300 hover:text-cyan-100">
+          Sign in
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EmailAuthForm({ email, setEmail, password, setPassword, showPass, setShowPass, remember, setRemember, error, loading, onSignIn, onSignUp }) {
+  return (
+    <div className="space-y-5">
+      {error && (
+        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <AlertCircle className="inline h-4 w-4 mr-2 align-text-bottom" />
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={onSignIn} className="space-y-4">
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-200">Email</label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              className="w-full rounded-3xl border border-slate-800/80 bg-slate-950/90 px-4 py-3 pl-12 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400/70"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-200">Password</label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="w-full rounded-3xl border border-slate-800/80 bg-slate-950/90 px-4 py-3 pl-12 pr-12 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400/70"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-100"
+            >
+              {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-sm text-slate-400">
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-400 focus:ring-cyan-400"
+            />
+            Remember me
+          </label>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+          <button
+            type="button"
+            onClick={onSignUp}
+            className="rounded-full border border-slate-700 bg-slate-950/70 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50"
+          >
+            Sign Up
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function GithubAuthForm({ ghToken, setGhToken, ghLoading, ghError, ghSuccess, onVerifyToken, onGitHubLogin, showGuide, setShowGuide }) {
+  return (
+    <div className="space-y-5">
+      <button
+        type="button"
+        onClick={onGitHubLogin}
+        disabled={!ghSuccess || ghLoading}
+        className="w-full rounded-full bg-slate-800/90 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/60 disabled:opacity-60"
+      >
+        <Github className="inline h-4 w-4 mr-2" />
+        Continue with GitHub
+      </button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-slate-800" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase tracking-[0.3em] text-slate-500">
+          Or use personal access token
+        </div>
+      </div>
+
+      <div className="rounded-[1.75rem] border border-slate-800/80 bg-slate-900/80 p-4">
+        <div className="flex items-center justify-between text-sm text-slate-300">
+          <span>GitHub Personal Access Token</span>
+          {ghSuccess && <CheckCircle className="h-4 w-4 text-emerald-400" />}
+        </div>
+        <div className="mt-3 flex gap-3 flex-col sm:flex-row">
+          <input
+            type="password"
+            value={ghToken}
+            onChange={(e) => setGhToken(e.target.value)}
+            placeholder="ghp_xxxxxx"
+            className="w-full rounded-3xl border border-slate-800/80 bg-slate-950/90 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400/70"
+          />
+          <button
+            type="button"
+            onClick={onVerifyToken}
+            disabled={ghLoading}
+            className="rounded-full bg-slate-800/90 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/60 disabled:opacity-60"
+          >
+            {ghLoading ? 'Verifying...' : 'Verify'}
+          </button>
+        </div>
+        {ghError && <div className="mt-3 text-sm text-red-300">{ghError}</div>}
+        {ghSuccess && <div className="mt-3 text-sm text-emerald-300">GitHub account detected: {ghSuccess.login}</div>}
+        <button
+          type="button"
+          onClick={onGitHubLogin}
+          disabled={!ghSuccess || ghLoading}
+          className="mt-4 w-full rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+        >
+          Sign In with GitHub
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowGuide(!showGuide)}
+        className="flex items-center justify-center gap-2 text-sm text-cyan-400 hover:text-cyan-200"
+      >
+        <HelpCircle className="h-4 w-4" />
+        Set up token
+        {showGuide ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      <AnimatePresence>
+        {showGuide && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="rounded-[1.75rem] border border-slate-800/80 bg-slate-900/80 p-4 text-sm text-slate-400">
+              <div className="font-semibold text-slate-100 mb-3">How to create a Personal Access Token:</div>
+              <ol className="space-y-2 list-decimal list-inside">
+                <li>Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">GitHub Settings → Developer settings → Personal access tokens</a></li>
+                <li>Click "Generate new token (classic)"</li>
+                <li>Select scopes: <span className="text-cyan-300">repo</span>, <span className="text-cyan-300">read:user</span></li>
+                <li>Generate and copy the token</li>
+                <li>Paste it above and click "Verify"</li>
+              </ol>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 export default function Login() {
   const { login, isAuthenticated, connectGitHub } = useAuth();
   const navigate = useNavigate();
 
-  const [step,      setStep]      = useState('login'); // 'login' | 'github'
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-  const [showPass,  setShowPass]  = useState(false);
-  const [remember,  setRemember]  = useState(false);
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState('');
-  const [pending,   setPending]   = useState(null);
-  const [showSync,  setShowSync]  = useState(false);
-  const [syncName,  setSyncName]  = useState('');
+  const [authMode, setAuthMode] = useState('signin');
+  const [activeTab, setActiveTab] = useState('email');
 
-  // GitHub PAT state
-  const [ghToken,   setGhToken]   = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [msLoading, setMsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(null);
+  const [showSync, setShowSync] = useState(false);
+  const [syncName, setSyncName] = useState('');
+
+  const [ghToken, setGhToken] = useState('');
   const [ghLoading, setGhLoading] = useState(false);
-  const [ghError,   setGhError]   = useState('');
+  const [ghError, setGhError] = useState('');
   const [ghSuccess, setGhSuccess] = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) navigate('/dashboard', { replace: true });
@@ -95,6 +508,8 @@ export default function Login() {
     setPending({ profile, remember: rememberMe });
     setSyncName(profile.name);
     setShowSync(true);
+    setGoogleLoading(false);
+    setMsLoading(false);
     setLoading(false);
   }, []);
 
@@ -102,35 +517,89 @@ export default function Login() {
     if (pending) login(pending.profile, pending.remember);
   }, [pending, login]);
 
-  // Google success handler
   const handleGoogleSuccess = useCallback((profile) => {
     setError('');
+    setGoogleLoading(false);
+    startSync(profile, remember);
+  }, [remember, startSync]);
+
+  const handleMicrosoftSuccess = useCallback((profile) => {
+    setError('');
+    setMsLoading(false);
     startSync(profile, remember);
   }, [remember, startSync]);
 
   const { signIn: googleSignIn } = useGoogleAuth(handleGoogleSuccess);
+  const { signIn: microsoftSignIn } = useMicrosoftAuth(handleMicrosoftSuccess);
 
-  // Email login
-  const handleEmail = async (e) => {
+  const handleEmailSignIn = async (e) => {
     e.preventDefault();
-    if (!email || !password) { setError('Enter your email and password.'); return; }
-    setError(''); setLoading(true);
-    await new Promise(r => setTimeout(r, 400));
+    if (!email || !password) {
+      setError('Enter your email and password.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
     const profile = {
-      name:           email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
       email,
-      picture:        null,
-      given_name:     email.split('@')[0],
+      picture: null,
+      given_name: email.split('@')[0],
       verified_email: true,
     };
-    if (ghSuccess) { profile.githubToken = ghToken; profile.githubUser = ghSuccess; }
+    if (ghSuccess) {
+      profile.githubToken = ghToken;
+      profile.githubUser = ghSuccess;
+    }
     startSync(profile, remember);
   };
 
-  // GitHub PAT verify
+  const handleEmailSignUp = async (e) => {
+    if (e) e.preventDefault();
+    if (!email || !password) {
+      setError('Enter your email and password to sign up.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const profile = {
+      name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+      email,
+      picture: null,
+      given_name: email.split('@')[0],
+      verified_email: true,
+    };
+    startSync(profile, remember);
+  };
+
+  const handleGoogleSignup = () => {
+    setError('');
+    setGoogleLoading(true);
+    const started = googleSignIn();
+    if (!started) setGoogleLoading(false);
+  };
+
+  const handleMicrosoftSignup = async () => {
+    setError('');
+    setMsLoading(true);
+    const started = await microsoftSignIn().catch((err) => {
+      setError('Microsoft login failed. Try again or use email signup.');
+      setMsLoading(false);
+      console.error(err);
+      return false;
+    });
+    if (!started) setMsLoading(false);
+  };
+
   const handleGitHubConnect = async () => {
-    if (!ghToken.trim()) { setGhError('Paste your GitHub Personal Access Token.'); return; }
-    setGhError(''); setGhLoading(true);
+    if (!ghToken.trim()) {
+      setGhError('Paste your GitHub Personal Access Token.');
+      return;
+    }
+    setGhError('');
+    setGhLoading(true);
     try {
       const user = await fetchGitHubUser(ghToken.trim());
       setGhSuccess(user);
@@ -141,262 +610,148 @@ export default function Login() {
     }
   };
 
-  // GitHub full login
   const handleGitHubLogin = async () => {
-    if (!ghSuccess) { setGhError('Verify your token first.'); return; }
+    if (!ghSuccess) {
+      setGhError('Verify your token first.');
+      return;
+    }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     startSync({
-      name:           ghSuccess.name || ghSuccess.login,
-      email:          ghSuccess.email || `${ghSuccess.login}@github.com`,
-      picture:        ghSuccess.avatar_url,
-      given_name:     ghSuccess.login,
+      name: ghSuccess.name || ghSuccess.login,
+      email: ghSuccess.email || `${ghSuccess.login}@github.com`,
+      picture: ghSuccess.avatar_url,
+      given_name: ghSuccess.login,
       verified_email: true,
-      githubToken:    ghToken.trim(),
-      githubUser:     ghSuccess,
+      githubToken: ghToken.trim(),
+      githubUser: ghSuccess,
     }, remember);
   };
 
-  const hasGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID &&
-    import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID';
+  const hasGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID';
+  const hasMicrosoftClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID && import.meta.env.VITE_MICROSOFT_CLIENT_ID !== 'YOUR_MICROSOFT_CLIENT_ID';
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
       <AnimatePresence>{showSync && <SyncOverlay userName={syncName} onComplete={onSyncDone} />}</AnimatePresence>
-
-      <div className="min-h-screen flex bg-[#050810]">
-
-        {/* ── Hero left panel ── */}
-        <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden flex-col">
-          <div className="absolute inset-0 bg-hero-gradient" />
-          <div className="absolute inset-0 bg-grid opacity-60" />
-          <div className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full bg-cyan-500/5 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent"
-              style={{ animation: 'scanMove 6s linear infinite', top: 0 }} />
-          </div>
-          <div className="relative z-10 flex flex-col h-full px-14 py-12">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center glow-cyan">
-                <Shield className="w-5 h-5 text-cyan-400" />
+      <div className="mx-auto max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.9fr] items-center">
+          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="rounded-[2rem] border border-slate-800/80 bg-slate-950/80 p-10 shadow-[0_40px_80px_rgba(3,21,45,0.35)]">
+            <div className="flex items-center gap-3 rounded-3xl bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">
+              <Shield className="h-4 w-4" />
+              Secure, intelligent repository monitoring for engineering teams.
+            </div>
+            <div className="mt-10">
+              <p className="text-xl font-semibold text-slate-100">Welcome back to CodeCognition.</p>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-400">
+                Sign in to access your dashboard, sync GitHub repositories, and manage AI analysis settings in one polished control center.
+              </p>
+            </div>
+            <div className="mt-12 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[1.75rem] border border-slate-800/80 bg-slate-900/80 p-5">
+                <div className="text-xs uppercase tracking-[0.3em] text-slate-500">Trusted workflows</div>
+                <div className="mt-3 text-3xl font-semibold text-slate-100">Secure</div>
               </div>
+              <div className="rounded-[1.75rem] border border-slate-800/80 bg-slate-900/80 p-5">
+                <div className="text-xs uppercase tracking-[0.3em] text-slate-500">Speed</div>
+                <div className="mt-3 text-3xl font-semibold text-cyan-300">Optimized</div>
+              </div>
+            </div>
+          </motion.section>
+
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="rounded-[2rem] border border-slate-800/90 bg-slate-900/95 p-8 shadow-[0_40px_80px_rgba(0,0,0,0.25)]">
+            <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="text-sm font-display font-bold text-slate-100 tracking-widest">REPOGUARDIAN</div>
-                <div className="text-[10px] font-mono text-cyan-400/60 tracking-widest">AUTONOMOUS AI SYSTEM</div>
+                <div className="text-xs uppercase tracking-[0.3em] text-slate-500">{authMode === 'signin' ? 'Sign in' : 'Sign up'}</div>
+                <h1 className="mt-2 text-2xl font-semibold text-slate-100">
+                  {authMode === 'signin' ? 'Access your workspace' : 'Create your account'}
+                </h1>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+                  {authMode === 'signin'
+                    ? 'Sign in to access your dashboard, sync GitHub repos, and manage AI analysis settings.'
+                    : 'Choose how to create your account: manual email entry, Google, or Microsoft authentication.'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <AuthModeToggle authMode={authMode} setAuthMode={setAuthMode} />
+                <Link to="/" className="text-xs uppercase tracking-[0.3em] text-cyan-400 hover:text-cyan-200">Return</Link>
               </div>
             </div>
-            <div className="flex-1 flex flex-col justify-center max-w-lg">
-              <div className="text-xs font-mono text-cyan-400 tracking-[0.3em] mb-4">▸ MULTI-AGENT INTELLIGENCE</div>
-              <h1 className="text-5xl font-display font-bold text-white leading-tight mb-6">
-                Your Repository,<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
-                  Managed by Autonomous Intelligence.
-                </span>
-              </h1>
-              <p className="text-slate-400 text-base leading-relaxed">
-                Four AI agents run 24/7 — detecting vulnerabilities, analysing quality,
-                resolving dependencies, and generating fixes before threats become incidents.
-              </p>
-              <div className="mt-10 space-y-3">
-                {FEATURES.map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                      <Icon className="w-3 h-3 text-cyan-400" />
-                    </div>
-                    <span className="text-slate-300 text-sm">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ── Right panel ── */}
-        <div className="flex-1 flex items-center justify-center px-8 relative">
-          <div className="absolute inset-0 bg-grid opacity-20" />
-          <div className="relative z-10 w-full max-w-md">
-            <div className="cyber-border rounded-2xl p-8 bg-[#090d1a]">
-
-              {/* Tab bar */}
-              <div className="flex rounded-lg bg-[#0d1220] border border-[#1a2240] p-1 mb-6">
-                <button onClick={() => setStep('login')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-mono transition-all ${step === 'login' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
-                  <Lock className="w-3 h-3" /> Email Login
-                </button>
-                <button onClick={() => setStep('github')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-mono transition-all ${step === 'github' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
-                  <Github className="w-3 h-3" /> GitHub Login
-                </button>
-              </div>
-
-              {/* ── GITHUB TAB ── */}
-              {step === 'github' && (
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-2xl font-display font-bold text-slate-100 mb-1">Connect GitHub</h2>
-                    <p className="text-slate-500 text-sm mb-4">Sync all your repositories instantly</p>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-[#0d1220] border border-[#1a2240] text-xs font-mono text-slate-400 space-y-1">
-                    <div className="text-cyan-400 font-semibold mb-2">How to get a token:</div>
-                    <div>1. github.com → Settings → Developer settings</div>
-                    <div>2. Personal access tokens → Tokens (classic)</div>
-                    <div>3. Generate → select <span className="text-cyan-400">repo</span> + <span className="text-cyan-400">read:user</span></div>
-                    <div>4. Copy and paste below</div>
-                  </div>
-
-                  {ghError && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
-                      <AlertCircle className="w-4 h-4 shrink-0" />{ghError}
-                    </div>
+            {authMode === 'signin' ? (
+              <>
+                <AuthTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+                <AnimatePresence mode="wait">
+                  {activeTab === 'email' && (
+                    <motion.div
+                      key="email"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <EmailAuthForm
+                        email={email}
+                        setEmail={setEmail}
+                        password={password}
+                        setPassword={setPassword}
+                        showPass={showPass}
+                        setShowPass={setShowPass}
+                        remember={remember}
+                        setRemember={setRemember}
+                        error={error}
+                        loading={loading}
+                        onSignIn={handleEmailSignIn}
+                        onSignUp={() => setAuthMode('signup')}
+                      />
+                    </motion.div>
                   )}
-
-                  {ghSuccess && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <img src={ghSuccess.avatar_url} alt={ghSuccess.login} className="w-8 h-8 rounded-full" />
-                      <div>
-                        <div className="text-xs font-semibold text-emerald-400">{ghSuccess.name || ghSuccess.login}</div>
-                        <div className="text-[10px] text-slate-500 font-mono">@{ghSuccess.login} · {ghSuccess.public_repos} repos</div>
-                      </div>
-                      <CheckCircle className="w-4 h-4 text-emerald-400 ml-auto" />
-                    </div>
+                  {activeTab === 'github' && (
+                    <motion.div
+                      key="github"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <GithubAuthForm
+                        ghToken={ghToken}
+                        setGhToken={setGhToken}
+                        ghLoading={ghLoading}
+                        ghError={ghError}
+                        ghSuccess={ghSuccess}
+                        onVerifyToken={handleGitHubConnect}
+                        onGitHubLogin={handleGitHubLogin}
+                        showGuide={showGuide}
+                        setShowGuide={setShowGuide}
+                      />
+                    </motion.div>
                   )}
-
-                  <div>
-                    <label className="text-xs font-mono text-slate-500 tracking-widest uppercase block mb-2">Personal Access Token</label>
-                    <div className="relative">
-                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                      <input type="password" value={ghToken}
-                        onChange={e => { setGhToken(e.target.value); setGhSuccess(null); setGhError(''); }}
-                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                        className="w-full bg-[#0d1220] border border-[#1a2240] rounded-lg pl-10 pr-3 py-3 text-sm text-slate-200 placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500/50 transition-all" />
-                    </div>
-                  </div>
-
-                  {!ghSuccess
-                    ? <button onClick={handleGitHubConnect} disabled={ghLoading}
-                        className="w-full py-3 rounded-lg bg-[#0d1220] border border-cyan-500/30 text-cyan-400 font-mono text-sm hover:bg-cyan-500/10 transition-all flex items-center justify-center gap-2 disabled:opacity-60">
-                        {ghLoading
-                          ? <><div className="w-4 h-4 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" /> Verifying...</>
-                          : <><Github className="w-4 h-4" /> Verify Token</>}
-                      </button>
-                    : <button onClick={handleGitHubLogin} disabled={loading || showSync}
-                        className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-[#050810] font-display font-bold text-sm tracking-wider transition-all glow-cyan flex items-center justify-center gap-2 disabled:opacity-70">
-                        {loading ? 'Launching...' : <>ACCESS COMMAND CENTER <ArrowRight className="w-4 h-4" /></>}
-                      </button>
-                  }
-                </div>
-              )}
-
-              {/* ── EMAIL TAB ── */}
-              {step === 'login' && (
-                <div>
-                  <h2 className="text-2xl font-display font-bold text-slate-100 mb-1">Welcome back</h2>
-                  <p className="text-slate-500 text-sm mb-6">Sign in to your command center</p>
-
-                  {error && (
-                    <div className="flex items-start gap-2.5 p-3 mb-5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
-                    </div>
-                  )}
-
-                  {/* ── Google Sign-In button ── */}
-                  <button
-                    onClick={googleSignIn}
-                    disabled={loading || showSync}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-[#1a2240] bg-[#0d1220] hover:bg-[#111828] hover:border-slate-600 transition-all text-slate-200 text-sm font-medium mb-4 group disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {/* Google SVG logo */}
-                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    <span>Continue with Google</span>
-                    {!hasGoogleClientId && (
-                      <span className="ml-auto text-[10px] font-mono text-amber-400/70"> </span>
-                    )}
-                  </button>
-
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="flex-1 h-px bg-[#1a2240]" />
-                    <span className="text-xs font-mono text-slate-600">OR</span>
-                    <div className="flex-1 h-px bg-[#1a2240]" />
-                  </div>
-
-                  {/* Optional GitHub link */}
-                  {ghSuccess ? (
-                    <div className="flex items-center gap-3 p-3 mb-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <img src={ghSuccess.avatar_url} alt={ghSuccess.login} className="w-7 h-7 rounded-full" />
-                      <div className="flex-1 text-xs">
-                        <div className="text-emerald-400 font-semibold">GitHub connected</div>
-                        <div className="text-slate-500 font-mono">@{ghSuccess.login}</div>
-                      </div>
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                    </div>
-                  ) : (
-                    <div className="p-3 mb-4 rounded-lg bg-[#0d1220] border border-[#1a2240]">
-                      <div className="text-xs text-slate-500 mb-2 font-mono">Optional: connect GitHub to sync repos</div>
-                      <div className="flex gap-2">
-                        <input type="password" value={ghToken} onChange={e => setGhToken(e.target.value)}
-                          placeholder="ghp_xxxx... (optional)"
-                          className="flex-1 bg-[#050810] border border-[#1a2240] rounded px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500/40" />
-                        <button onClick={handleGitHubConnect} disabled={!ghToken || ghLoading}
-                          className="px-3 py-1.5 text-xs font-mono bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded hover:bg-cyan-500/20 transition-all disabled:opacity-40">
-                          {ghLoading ? '...' : 'Link'}
-                        </button>
-                      </div>
-                      {ghError && <div className="text-[10px] text-red-400 font-mono mt-1">{ghError}</div>}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleEmail} className="space-y-4">
-                    <div>
-                      <label className="text-xs font-mono text-slate-500 tracking-widest uppercase block mb-2">Email</label>
-                      <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                        placeholder="admin@example.com"
-                        className="w-full bg-[#0d1220] border border-[#1a2240] rounded-lg px-4 py-3 text-sm text-slate-200 placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500/50 transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-mono text-slate-500 tracking-widest uppercase block mb-2">Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                        <input type={showPass ? 'text' : 'password'} value={password}
-                          onChange={e => setPassword(e.target.value)} placeholder="••••••••"
-                          className="w-full bg-[#0d1220] border border-[#1a2240] rounded-lg pl-10 pr-10 py-3 text-sm text-slate-200 placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500/50 transition-all" />
-                        <button type="button" onClick={() => setShowPass(s => !s)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400">
-                          {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-                        <div onClick={() => setRemember(r => !r)}
-                          className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${remember ? 'bg-cyan-500/20 border-cyan-500/60' : 'bg-[#0d1220] border-[#1a2240]'}`}>
-                          {remember && <svg className="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                        </div>
-                        <span className="text-xs text-slate-400">Remember me</span>
-                      </label>
-                    </div>
-                    <button type="submit" disabled={loading || showSync}
-                      className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-[#050810] font-display font-bold text-sm tracking-wider transition-all glow-cyan flex items-center justify-center gap-2 mt-2 disabled:opacity-70">
-                      {loading && !showSync
-                        ? <><div className="w-4 h-4 border-2 border-[#050810]/30 border-t-[#050810] rounded-full animate-spin" />Authenticating...</>
-                        : <>ACCESS COMMAND CENTER <ArrowRight className="w-4 h-4" /></>}
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              <p className="text-center text-xs text-slate-600 font-mono mt-6">
-                Protected by RepoGuardian AI Security Engine™
-              </p>
-            </div>
-          </div>
+                </AnimatePresence>
+              </>
+            ) : (
+              <SignupForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                showPass={showPass}
+                setShowPass={setShowPass}
+                error={error}
+                loading={loading}
+                googleLoading={googleLoading}
+                msLoading={msLoading}
+                onEmailSignUp={handleEmailSignUp}
+                onGoogleSignup={handleGoogleSignup}
+                onMicrosoftSignup={handleMicrosoftSignup}
+                hasGoogleClientId={hasGoogleClientId}
+                hasMicrosoftClientId={hasMicrosoftClientId}
+                onSwitchToSignIn={() => setAuthMode('signin')}
+              />
+            )}
+          </motion.div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

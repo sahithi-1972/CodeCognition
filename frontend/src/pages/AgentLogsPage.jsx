@@ -22,7 +22,7 @@ const STATUS_STYLES = {
 };
 
 const FULL_LOG_STREAM = [
-  { id: 1,  ts: '09:41:02', agent: 'Orchestrator',      msg: 'RepoGuardian AI system boot — v2.4.1',                                 status: 'success' },
+  { id: 1,  ts: '09:41:02', agent: 'Orchestrator',      msg: 'CodeCognition AI system boot — v3.0',                                 status: 'success' },
   { id: 2,  ts: '09:41:03', agent: 'Orchestrator',      msg: 'Connecting to repository index...',                                     status: 'running' },
   { id: 3,  ts: '09:41:05', agent: 'Orchestrator',      msg: '5 repositories registered for monitoring',                             status: 'success' },
   { id: 4,  ts: '09:41:06', agent: 'Security Scout',    msg: 'Initialising SAST engine — OWASP ruleset loaded',                      status: 'running' },
@@ -106,7 +106,7 @@ export default function AgentLogsPage() {
     <div className="bg-[#050810] bg-grid min-h-screen">
       <header className="sticky top-0 z-20 border-b border-[#1a2240] bg-[#050810]/95 backdrop-blur-sm px-6 py-3.5 flex items-center gap-4">
         <div>
-          <div className="text-[10px] font-mono text-slate-600 tracking-widest">REPOGUARDIAN AI › AGENT LOGS</div>
+          <div className="text-[10px] font-mono text-slate-600 tracking-widest">CodeCognition AI › AGENT LOGS</div>
           <h1 className="text-base font-display font-bold text-slate-100 tracking-wider mt-0.5">Live Agent Feed</h1>
         </div>
         <div className="ml-auto flex items-center gap-3">

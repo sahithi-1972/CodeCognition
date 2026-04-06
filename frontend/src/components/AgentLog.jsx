@@ -94,7 +94,7 @@ export default function AgentLog({ externalLogs }) {
         fontFamily: 'monospace', fontSize: 12,
       }}>
         <span style={{ color: '#3fb950' }}>$</span>
-        <span style={{ color: 'var(--text-2)', marginLeft: 6 }}>repoguardian --watch --agents=4</span>
+        <span style={{ color: 'var(--text-2)', marginLeft: 6 }}>codecognition --watch --agents=4</span>
       </div>
 
       {/* ── Log rows ── */}
