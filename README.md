@@ -1,63 +1,189 @@
-# CodeCognition AI — Complete Setup Guide
+# 🤖 CodeCognition
 
-## What's New in v2.0
+*AI-powered repository analysis & insights platform*
 
--  **Full routing** — All pages now work: Dashboard, Repositories, Repo Detail, Agent Logs, Settings
--  **GitHub sync** — Connect your GitHub Personal Access Token to see all your real repos
--  **AI Analysis** — Claude AI analyses each repo for security, quality, deps & docs
--  **Digital Twin** — Impact simulation showing what changes affect
--  **Quantum Risk** — Risk scoring per file with factor breakdown
--  **Agent Logs** — Live streaming log page with filtering
--  **Settings page** — GitHub connection management
+---
 
-## Quick Start
+## ✨ What It Does
 
-### 1. Frontend Setup
+CodeCognition analyzes your GitHub repositories and provides intelligent insights:
+
+- 🔍 **Security Analysis** — Identify vulnerabilities and risks
+- 📊 **Code Quality** — Detect issues and improvements
+- 📦 **Dependency Review** — Check for outdated or risky packages
+- 🎯 **Documentation Gaps** — Find missing docs
+- 🔮 **Quantum Risk Scoring** — ML-based risk assessment per file
+- 🌐 **Digital Twin** — Visualize dependency impact & blast radius
+- 📋 **Agent Logs** — Real-time analysis tracking
+
+---
+
+## 🚀 Quick Start
+
+### Option 1: Frontend Only (Easiest)
 ```bash
 cd frontend
 npm install
-cp .env.example .env
+npm run dev
+# Open http://localhost:5173
+```
+
+### Option 2: Full Stack
+```bash
+# Terminal 1 - Backend
+cd backend-java
+mvn spring-boot:run
+
+# Terminal 2 - Frontend
+cd frontend
 npm run dev
 ```
 
-### 2. Backend Setup (Java - Eclipse IDE)
-```bash
-cd backend-java
-mvn clean compile
-# Then open in Eclipse IDE and run CodeCognitionApplication.java
+---
+
+## 📦 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 18 + Vite + Tailwind CSS + Framer Motion |
+| **Backend** | Java Spring Boot |
+| **AI Engine** | Claude API (claude-sonnet-4-20250514) |
+| **GitHub API** | Personal Access Token Integration |
+| **Styling** | Tailwind CSS + Dark Mode Support |
+
+---
+
+## 🔗 Connect GitHub
+
+1. Go to **Settings** → **GitHub Integration**
+2. Create token: [github.com/settings/tokens](https://github.com/settings/tokens)
+   - Select scopes: `repo` + `read:user`
+3. Paste token and connect
+4. Your repos appear in dashboard instantly
+
+---
+
+## 📁 Project Structure
+
+```
+CodeCognition/
+├── frontend/                    ← React + Vite UI
+│   ├── src/pages/              ← Dashboard, Repos, Analysis, Settings
+│   ├── src/components/         ← Reusable UI components
+│   ├── src/context/            ← Auth & Theme state
+│   └── src/hooks/              ← GitHub & API integrations
+│
+├── backend-java/               ← Java Spring Boot API
+│   ├── api/                    ← REST controllers
+│   ├── service/                ← Business logic
+│   ├── model/                  ← Data models
+│   └── pom.xml                 ← Maven dependencies
+│
+└── docs/                       ← Setup guides & documentation
 ```
 
-### 3. Python Backend (Legacy - Optional)
-```bash
-cd backend
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn main:app --reload --port 8000
-```
+---
 
-### 3. Connect GitHub
-- Log in with any email + password (demo login)
-- Go to **Settings** → **GitHub Integration**
-- Create a token at github.com/settings/tokens (select `repo` and `read:user` scopes)
-- Paste token → Connect
-- Your repos will appear immediately in the dashboard!
+## 🎯 Pages & Features
 
-### 4. Run AI Analysis on a Repo
-- Go to **Repositories** → click any repo
-- Click **Run AI Analysis**
-- Claude AI will scan for: Security vulnerabilities, Code quality, Dependencies, Documentation
-- View results across 6 tabs: Overview, Security, Code Quality, Digital Twin, Quantum Risk, AI Fix Suggestions
+| Page | Feature |
+|------|---------|
+| **Dashboard** | Overview of repos & analysis status |
+| **Repositories** | Browse all GitHub repos |
+| **Repo Detail** | Deep dive analysis view |
+| **Security** | Vulnerability & risk report |
+| **Code Quality** | Issue detection & suggestions |
+| **Digital Twin** | Dependency graph visualization |
+| **Quantum Risk** | ML-based risk scoring |
+| **Agent Logs** | Analysis activity stream |
+| **Settings** | GitHub token management |
 
-## Environment Variables
+---
 
+## 🔧 Configuration
+
+### Frontend (.env)
 ```env
-# frontend/.env
 VITE_API_URL=http://localhost:8000
 ```
 
-## Tech Stack
-- **Frontend**: React 18, Vite, Tailwind CSS, Framer Motion, React Router v6
-- **AI**: Claude API (claude-sonnet-4-20250514) for repository analysis
-- **GitHub**: GitHub REST API v3 (via Personal Access Token)
-- **Backend**: FastAPI + Python (optional)
+### Backend (application.properties)
+```properties
+server.port=8000
+spring.application.name=CodeCognition
+```
+
+---
+
+## 📊 How It Works
+
+1. **Connect** your GitHub account
+2. **Select** a repository to analyze
+3. **AI analyzes** code, dependencies, docs, security
+4. **View insights** across multiple analysis tabs
+5. **Explore** digital twin & risk scores
+
+---
+
+## 🛠️ Development
+
+### Requirements
+- Node.js 18+ (frontend)
+- Maven 3.8+ (backend)
+- Java 17+ (backend)
+
+### Run in Development Mode
+```bash
+# Frontend with hot reload
+cd frontend && npm run dev
+
+# Backend with auto-compile
+cd backend-java && mvn spring-boot:run
+```
+
+### Build for Production
+```bash
+# Frontend
+cd frontend && npm run build
+
+# Backend
+cd backend-java && mvn clean package
+```
+
+---
+
+## 📚 Documentation
+
+- **[Setup Guide](./COLLABORATOR_SETUP.md)** — Complete installation & setup
+- **[Backend Setup](./backend-java/README.md)** — Java backend details
+- **[Frontend Guide](./frontend/README.md)** — React app info
+
+---
+
+## 🎨 Features Highlight
+
+✅ Real-time GitHub sync  
+✅ AI-powered code analysis  
+✅ Security vulnerability detection  
+✅ Dependency risk assessment  
+✅ Interactive dashboards  
+✅ Dark mode support  
+✅ Multi-tab insights view  
+✅ Live analysis logs  
+
+---
+
+## 📝 License
+
+MIT
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, open an issue first.
+
+---
+
+*Built with AI for developers. Made simple. Made powerful.*
 
