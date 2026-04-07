@@ -1,10 +1,17 @@
 package com.codecognition.model;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public class RepoAnalyzeRequest {
+    @NotBlank(message = "Owner is required")
     public String owner;
+    
+    @NotBlank(message = "Repository name is required")
+    @Size(min = 1, max = 100, message = "Repository name must be between 1 and 100 characters")
     public String repo;
+    
     public String language;
     public int size = 0;
     public int stars = 0;

@@ -2,6 +2,10 @@ package com.codecognition.api;
 
 import com.codecognition.model.*;
 import com.codecognition.service.AnalysisService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,7 +15,8 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@Tag(name = "Repository Analysis", description = "Repository analysis, health checks, and AI-powered code insights")
 public class CodeCognitionController {
 
     @Autowired
@@ -20,6 +25,7 @@ public class CodeCognitionController {
     private Map<String, AnalysisResult> cache = new HashMap<>();
 
     @GetMapping("/ping")
+    @Operation(summary = "Health check", description = "Check if the service is online and responsive")
     public ResponseEntity<Map<String, Object>> ping() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "online");
@@ -29,7 +35,8 @@ public class CodeCognitionController {
     }
 
     @PostMapping("/analyze")
-    public ResponseEntity<Map<String, String>> analyze(@RequestBody AnalyzeRequest req) {
+    @Operation(summary = "Queue repository analysis", description = "Queue a repository for analysis (legacy endpoint)")
+    public ResponseEntity<Map<String, String>> analyze(@Valid @RequestBody AnalyzeRequest req) {
         Map<String, String> response = new HashMap<>();
         response.put("status", "queued");
         response.put("repo", req.repo_url);
@@ -38,7 +45,9 @@ public class CodeCognitionController {
     }
 
     @PostMapping("/analyze-repo")
-    public ResponseEntity<AnalysisResult> analyzeRepo(@RequestBody RepoAnalyzeRequest req) {
+    @Operation(summary = "Analyze repository in detail", description = "Perform comprehensive analysis on a repository including security, quality, and dependency checks (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<AnalysisResult> analyzeRepo(@Valid @RequestBody RepoAnalyzeRequest req) {
         // Handle legacy repo_name field
         if (req.repo_name != null && "unknown".equals(req.owner)) {
             String[] parts = req.repo_name.split("/");
@@ -79,7 +88,7 @@ public class CodeCognitionController {
     }
 
     @PostMapping("/simulation")
-    public ResponseEntity<Map<String, Object>> runSimulation(@RequestBody SimulationRequest req) {
+    public ResponseEntity<Map<String, Object>> runSimulation(@Valid @RequestBody SimulationRequest req) {
         Map<String, Object> response = new HashMap<>();
         response.put("changed_file", req.changed_file);
         response.put("direct_impact", new ArrayList<>());

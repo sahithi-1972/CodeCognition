@@ -1,8 +1,12 @@
-# Environment files
+# Environment files (SECRETS - DO NOT COMMIT)
 backend/.env
+backend/.env.local
 backend/.env.example
 frontend/.env
+frontend/.env.local
 frontend/.env.example
+.env
+.env.local
 
 # Python
 venv/
@@ -47,6 +51,10 @@ backend-java/.classpath
 backend-java/.project
 backend-java/.settings/
 backend-java/.factorypath
+backend-java/.idea/
+backend-java/*.iml
+backend-java/*.ipr
+backend-java/*.iws
 *.jar
 *.war
 

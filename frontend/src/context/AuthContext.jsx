@@ -25,6 +25,8 @@ function writeSession(profile, rememberMe) {
     loginAt:     new Date().toISOString(),
     githubToken: profile.githubToken ?? null,
     githubUser:  profile.githubUser  ?? null,
+    jwtToken:    profile.jwtToken    ?? null,
+    role:        profile.role        ?? 'USER',
   };
   localStorage.setItem(REMEMBER_KEY, String(rememberMe));
   const store = rememberMe ? localStorage : sessionStorage;
@@ -46,6 +48,8 @@ export function AuthProvider({ children }) {
   const [isLoading,       setLoad]   = useState(true);
   const [githubToken,     setGhTok]  = useState(null);
   const [githubUser,      setGhUser] = useState(null);
+  const [jwtToken,        setJwt]    = useState(null);
+  const [userRole,        setRole]   = useState(null);
 
   useEffect(() => {
     const session = readSession();
@@ -54,6 +58,8 @@ export function AuthProvider({ children }) {
       setIsAuth(true);
       if (session.githubToken) setGhTok(session.githubToken);
       if (session.githubUser)  setGhUser(session.githubUser);
+      if (session.jwtToken)    setJwt(session.jwtToken);
+      if (session.role)        setRole(session.role);
     }
     setLoad(false);
   }, []);
@@ -64,6 +70,8 @@ export function AuthProvider({ children }) {
     setIsAuth(true);
     if (profile.githubToken) setGhTok(profile.githubToken);
     if (profile.githubUser)  setGhUser(profile.githubUser);
+    if (profile.jwtToken)    setJwt(profile.jwtToken);
+    if (profile.role)        setRole(profile.role);
   }, []);
 
   const connectGitHub = useCallback((token, ghUser) => {
@@ -84,10 +92,12 @@ export function AuthProvider({ children }) {
     setIsAuth(false);
     setGhTok(null);
     setGhUser(null);
+    setJwt(null);
+    setRole(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, githubToken, githubUser, connectGitHub }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, githubToken, githubUser, connectGitHub, jwtToken, userRole }}>
       {children}
     </AuthContext.Provider>
   );

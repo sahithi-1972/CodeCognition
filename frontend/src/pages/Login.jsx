@@ -540,19 +540,42 @@ export default function Login() {
     }
     setError('');
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const profile = {
-      name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
-      email,
-      picture: null,
-      given_name: email.split('@')[0],
-      verified_email: true,
-    };
-    if (ghSuccess) {
-      profile.githubToken = ghToken;
-      profile.githubUser = ghSuccess;
+    
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Invalid email or password');
+      }
+
+      const data = await response.json();
+      
+      const profile = {
+        name: data.fullName || email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+        email: data.email,
+        picture: null,
+        given_name: data.fullName?.split(' ')[0] || email.split('@')[0],
+        verified_email: true,
+        jwtToken: data.token,
+        role: data.role,
+      };
+      
+      if (ghSuccess) {
+        profile.githubToken = ghToken;
+        profile.githubUser = ghSuccess;
+      }
+      
+      startSync(profile, remember);
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+      setLoading(false);
     }
-    startSync(profile, remember);
   };
 
   const handleEmailSignUp = async (e) => {
@@ -563,15 +586,41 @@ export default function Login() {
     }
     setError('');
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const profile = {
-      name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
-      email,
-      picture: null,
-      given_name: email.split('@')[0],
-      verified_email: true,
-    };
-    startSync(profile, remember);
+    
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Registration failed. Email might already be registered.');
+      }
+
+      const data = await response.json();
+      
+      const profile = {
+        name: data.fullName,
+        email: data.email,
+        picture: null,
+        given_name: data.fullName?.split(' ')[0] || email.split('@')[0],
+        verified_email: true,
+        jwtToken: data.token,
+        role: data.role,
+      };
+      
+      startSync(profile, remember);
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignup = () => {
