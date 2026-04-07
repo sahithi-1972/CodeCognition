@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        mono: ['"JetBrains Mono"', 'monospace'],
-        display: ['"Rajdhani"', 'sans-serif'],
-        body: ['"DM Sans"', 'sans-serif'],
+        mono: ['"Space Mono"', 'monospace'],
+        display: ['"Inter"', 'sans-serif'],
+        body: ['"Inter"', 'sans-serif'],
       },
       colors: {
         cyber: {

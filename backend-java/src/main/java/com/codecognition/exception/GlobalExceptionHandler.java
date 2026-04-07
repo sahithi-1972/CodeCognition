@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -52,6 +53,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex) {
+        logger.warn("Static resource not found: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "error");
+        response.put("code", "NOT_FOUND");
+        response.put("message", "Resource not found");
+        response.put("timestamp", LocalDateTime.now());
+
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         logger.warn("Illegal argument: {}", ex.getMessage());
@@ -62,7 +76,11 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
         response.put("timestamp", LocalDateTime.now());
 
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        // Return 401 for authentication errors, 400 for others
+        HttpStatus status = ex.getMessage().contains("Invalid email or password") ? 
+            HttpStatus.UNAUTHORIZED : HttpStatus.BAD_REQUEST;
+        
+        return new ResponseEntity<>(response, status);
     }
 
     @ExceptionHandler(Exception.class)

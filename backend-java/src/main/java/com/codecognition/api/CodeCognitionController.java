@@ -2,6 +2,8 @@ package com.codecognition.api;
 
 import com.codecognition.model.*;
 import com.codecognition.service.AnalysisService;
+import com.codecognition.service.GitHubService;
+import com.codecognition.repository.AnalysisResultRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +24,12 @@ public class CodeCognitionController {
     @Autowired
     private AnalysisService analysisService;
 
+    @Autowired
+    private GitHubService gitHubService;
+
+    @Autowired
+    private AnalysisResultRepository analysisResultRepository;
+
     private Map<String, AnalysisResult> cache = new HashMap<>();
 
     @GetMapping("/ping")
@@ -31,16 +39,6 @@ public class CodeCognitionController {
         response.put("status", "online");
         response.put("service", "CodeCognition AI v3.3 (Java)");
         response.put("ts", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/analyze")
-    @Operation(summary = "Queue repository analysis", description = "Queue a repository for analysis (legacy endpoint)")
-    public ResponseEntity<Map<String, String>> analyze(@Valid @RequestBody AnalyzeRequest req) {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "queued");
-        response.put("repo", req.repo_url);
-        // In a real app, this would be background
         return ResponseEntity.ok(response);
     }
 
@@ -61,27 +59,37 @@ public class CodeCognitionController {
     }
 
     @GetMapping("/health-status")
+    @Operation(summary = "Get repository health status", description = "Retrieve cached analysis results for a repository (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Map<String, Object>> getHealthStatus(
             @RequestParam(required = false) String repo_url) {
         
         Map<String, Object> response = new HashMap<>();
 
-        if (repo_url != null && cache.containsKey(repo_url)) {
-            AnalysisResult r = cache.get(repo_url);
-            response.put("status", "complete");
-            response.put("repo", repo_url);
-            response.put("health_score", r.health_score);
-            response.put("findings", r.findings);
-            response.put("summary", r.summary);
-            response.put("agent_logs", r.agent_logs);
-            response.put("grade", gradeScore(r.health_score));
-            response.put("last_updated", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        if (repo_url != null) {
+            AnalysisResult r = analysisResultRepository.findByRepoUrl(repo_url);
+            if (r != null) {
+                response.put("status", "complete");
+                response.put("repo", repo_url);
+                response.put("health_score", r.health_score);
+                response.put("security_score", r.security_score);
+                response.put("quality_score", r.quality_score);
+                response.put("dependency_score", r.dependency_score);
+                response.put("documentation_score", r.documentation_score);
+                response.put("findings", r.findings);
+                response.put("summary", r.summary);
+                response.put("grade", gradeScore(r.health_score));
+                response.put("last_updated", r.updated_at.format(DateTimeFormatter.ISO_DATE_TIME));
+            } else {
+                response.put("status", "no_analysis");
+                response.put("repo", repo_url);
+                response.put("health_score", null);
+                response.put("findings", new ArrayList<>());
+                response.put("message", "Not yet analysed.");
+            }
         } else {
-            response.put("status", "no_analysis");
-            response.put("repo", repo_url);
-            response.put("health_score", null);
-            response.put("findings", new ArrayList<>());
-            response.put("message", "Not yet analysed.");
+            response.put("status", "error");
+            response.put("message", "repo_url parameter is required");
         }
 
         return ResponseEntity.ok(response);

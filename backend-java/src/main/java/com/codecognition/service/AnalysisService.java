@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.regex.*;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class AnalysisService {
@@ -85,6 +86,9 @@ public class AnalysisService {
         // Dependency scan
         scanDependencies(req.file_context, findings, findingId);
 
+        // Code quality scan
+        scanCodeQuality(req.file_context, req.tree, findings, findingId);
+
         // Structural checks
         scanStructure(req, findings, findingId);
 
@@ -113,9 +117,19 @@ public class AnalysisService {
         result.status = status;
         result.summary = summary;
         result.findings = findings;
-        result.quantum_risk = quantumRisk;
-        result.digital_twin = digitalTwin;
-        result.agent_logs = agentLogs;
+        
+        // Convert to JSON strings for database storage
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            result.quantum_risk_json = mapper.writeValueAsString(quantumRisk);
+            result.digital_twin_json = mapper.writeValueAsString(digitalTwin);
+            result.agent_logs_json = mapper.writeValueAsString(agentLogs);
+        } catch (Exception e) {
+            result.quantum_risk_json = "[]";
+            result.digital_twin_json = "{}";
+            result.agent_logs_json = "[]";
+        }
+        
         result._engine = "rule-based";
 
         return result;
@@ -233,6 +247,76 @@ public class AnalysisService {
             f.description = "No README found";
             f.file = "Repository root";
             f.fix = "Create README.md";
+            findings.add(f);
+        }
+    }
+
+    private void scanCodeQuality(String fileContext, List<String> files, List<Finding> findings, int[] findingId) {
+        if (fileContext == null || fileContext.isEmpty()) return;
+
+        // Check for large functions
+        Pattern largeFunction = Pattern.compile("(?:function|def|async function|const\\s+\\w+\\s*=\\s*(?:async\\s*)?\\(|public\\s+\\w+\\s+\\w+\\s*\\().*?(?=(?:function|def|async function|const|public|private|protected|class|interface|}))", Pattern.DOTALL);
+        Matcher m = largeFunction.matcher(fileContext);
+        int functionCount = 0;
+        while (m.find() && functionCount < 5) {
+            String func = m.group();
+            if (func.split("\n").length > 50) {
+                Finding f = new Finding();
+                f.id = "f" + (++findingId[0]);
+                f.severity = "LOW";
+                f.category = "Quality";
+                f.title = "Long Function/Method Detected";
+                f.description = "Functions should be kept below 50 lines for readability";
+                f.file = "Multiple files";
+                f.fix = "Refactor long functions into smaller, single-purpose functions";
+                findings.add(f);
+                break;
+            }
+            functionCount++;
+        }
+
+        // Check for code comments
+        boolean hasComments = fileContext.contains("//") || fileContext.contains("/*") || fileContext.contains("#");
+        if (!hasComments && !fileContext.isEmpty()) {
+            Finding f = new Finding();
+            f.id = "f" + (++findingId[0]);
+            f.severity = "LOW";
+            f.category = "Documentation";
+            f.title = "Missing Code Comments";
+            f.description = "Code lacks proper documentation and comments";
+            f.file = "Source files";
+            f.fix = "Add JSDoc/docstring comments for functions and complex logic";
+            findings.add(f);
+        }
+
+        // Check for type definitions (TypeScript, Python type hints)
+        boolean hasTypeInfo = fileContext.contains(": string") || fileContext.contains(": number") || 
+                             fileContext.contains(": boolean") || fileContext.contains("-> ") ||
+                             fileContext.contains(": List") || fileContext.contains(": Dict");
+        if (!hasTypeInfo && fileContext.length() > 500) {
+            Finding f = new Finding();
+            f.id = "f" + (++findingId[0]);
+            f.severity = "LOW";
+            f.category = "Quality";
+            f.title = "Missing Type Annotations";
+            f.description = "Code lacks type safety annotations";
+            f.file = "Source files";
+            f.fix = "Add TypeScript types or Python type hints for better type safety";
+            findings.add(f);
+        }
+
+        // Check for error handling
+        boolean hasTryCatch = fileContext.contains("try {") || fileContext.contains("try:") || 
+                             fileContext.contains("catch") || fileContext.contains("except");
+        if (!hasTryCatch && fileContext.length() > 1000) {
+            Finding f = new Finding();
+            f.id = "f" + (++findingId[0]);
+            f.severity = "MEDIUM";
+            f.category = "Quality";
+            f.title = "Insufficient Error Handling";
+            f.description = "Code may lack proper try-catch/exception handling";
+            f.file = "Source files";
+            f.fix = "Add proper error handling with try-catch blocks or exception handlers";
             findings.add(f);
         }
     }
@@ -396,21 +480,30 @@ public class AnalysisService {
         result.status = "Healthy";
         result.summary = req.owner + "/" + req.repo + " is empty — no source files to analyse.";
         result.findings = new ArrayList<>();
-        result.quantum_risk = new ArrayList<>();
-
-        Map<String, Object> dt = new HashMap<>();
-        dt.put("critical_files", new ArrayList<>());
-        dt.put("dependency_map", new HashMap<>());
-        dt.put("impact_summary", "No files yet.");
-        result.digital_twin = dt;
-
-        List<Map<String, Object>> logs = new ArrayList<>();
-        Map<String, Object> log = new HashMap<>();
-        log.put("agent", "Orchestrator");
-        log.put("msg", "Repository appears to be empty.");
-        log.put("status", "warn");
-        logs.add(log);
-        result.agent_logs = logs;
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            result.quantum_risk_json = mapper.writeValueAsString(new ArrayList<>());
+            
+            Map<String, Object> dt = new HashMap<>();
+            dt.put("critical_files", new ArrayList<>());
+            dt.put("dependency_map", new HashMap<>());
+            dt.put("impact_summary", "No files yet.");
+            result.digital_twin_json = mapper.writeValueAsString(dt);
+            
+            List<Map<String, Object>> logs = new ArrayList<>();
+            Map<String, Object> log = new HashMap<>();
+            log.put("agent", "Orchestrator");
+            log.put("msg", "Repository appears to be empty.");
+            log.put("status", "warn");
+            logs.add(log);
+            result.agent_logs_json = mapper.writeValueAsString(logs);
+        } catch (Exception e) {
+            result.quantum_risk_json = "[]";
+            result.digital_twin_json = "{}";
+            result.agent_logs_json = "[]";
+        }
+        
         result._engine = "empty-repo";
 
         return result;

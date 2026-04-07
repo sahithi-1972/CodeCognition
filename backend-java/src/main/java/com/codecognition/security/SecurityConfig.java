@@ -27,13 +27,14 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/", "/ping", "/health-status").permitAll()
+                .requestMatchers("/", "/ping", "/health-status", "/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/auth/verify").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/repositories/test-github-token", "/api/repositories/github/repos").permitAll()
                 
                 // Protected endpoints - require JWT token
-                .requestMatchers(HttpMethod.POST, "/analyze", "/analyze-repo", "/simulation", "/quantum-risk").authenticated()
+                .requestMatchers(HttpMethod.POST, "/analyze", "/analyze-repo", "/api/repositories/analyze-github-repo", "/simulation", "/quantum-risk").authenticated()
                 .requestMatchers(HttpMethod.GET, "/agent-logs", "/simulation/files").authenticated()
                 
                 // Admin only endpoints (add these as needed)

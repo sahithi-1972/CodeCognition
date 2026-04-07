@@ -11,57 +11,10 @@ import {
 import { motion as m } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { fetchRepoDetails } from '../hooks/useGitHub';
+import { usePhase3Analysis } from '../hooks/usePhase3Analysis';
+import Phase3ResultsPanel from '../components/Phase3Results';
 import HealthGauge from '../components/HealthGauge';
 import AgentLog from '../components/AgentLog';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AI ANALYSIS — calls backend /analyze-repo with correct fields
-// ─────────────────────────────────────────────────────────────────────────────
-async function runAIAnalysis(repoData) {
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-  // Parse owner/repo from full_name like "owner/repo"
-  const fullName  = repoData.full_name || repoData.name || 'unknown/repo';
-  const parts     = fullName.split('/');
-  const ownerPart = parts.length >= 2 ? parts[0] : 'unknown';
-  const repoPart  = parts.length >= 2 ? parts[1] : fullName;
-
-  const res = await fetch(`${API_BASE}/analyze-repo`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      owner:           ownerPart,
-      repo:            repoPart,
-      language:        repoData.language             || null,
-      stars:           repoData.stargazers_count      || 0,
-      forks:           repoData.forks_count           || 0,
-      open_issues:     repoData.open_issues_count     || 0,
-      size:            repoData.size                  || 0,
-      topics:          repoData.topics                || [],
-      description:     repoData.description           || null,
-      default_branch:  repoData.default_branch        || 'main',
-      has_wiki:        repoData.has_wiki              || false,
-      archived:        repoData.archived              || false,
-      is_empty:        false,
-      file_count:      repoData.size ? Math.max(5, Math.round(repoData.size / 10)) : 5,
-      has_tests:       false,
-      has_ci:          false,
-      has_docker:      false,
-      has_readme:      false,
-      has_license:     repoData.license               ? true : false,
-      has_security_md: false,
-      file_context:    '',
-      tree:            [],
-    }),
-  });
-
-  if (!res.ok) {
-    let msg = `Backend returned ${res.status}`;
-    try { const e = await res.json(); msg = JSON.stringify(e.detail || e); } catch {}
-    throw new Error(msg);
-  }
-  return res.json();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TABS
@@ -375,7 +328,8 @@ const DEMO_ANALYSIS = {
 export default function RepoDetail() {
   const { owner, repo } = useParams();
   const navigate = useNavigate();
-  const { githubToken } = useAuth();
+  const { githubToken, token: jwtToken } = useAuth();
+  const { analyze, loading: phase3Loading, error: phase3Error, result: phase3Result } = usePhase3Analysis();
 
   const [activeTab,   setActiveTab]   = useState('overview');
   const [repoInfo,    setRepoInfo]    = useState(null);
@@ -384,6 +338,19 @@ export default function RepoDetail() {
   const [infoLoading, setInfoLoad]    = useState(true);
   const [analysisRan, setAnalysisRan] = useState(false);
   const [error,       setError]       = useState('');
+
+  // Debug logging - track context values
+  useEffect(() => {
+    console.log('📱 RepoDetail component mounted/updated:');
+    console.log('  owner:', owner);
+    console.log('  repo:', repo);
+    console.log('  githubToken present:', !!githubToken, githubToken?.substring(0, 15));
+    console.log('  jwtToken present:', !!jwtToken, jwtToken?.substring(0, 15));
+    console.log('  phase3Loading:', phase3Loading);
+    console.log('  phase3Error:', phase3Error);
+    console.log('  phase3Result:', phase3Result);
+    console.log('  analyze function:', typeof analyze);
+  }, [owner, repo, githubToken, jwtToken, phase3Loading, phase3Error, phase3Result, analyze]);
 
   useEffect(() => {
     async function load() {
@@ -407,26 +374,70 @@ export default function RepoDetail() {
   }, [owner, repo, githubToken]);
 
   const handleRunAnalysis = async () => {
-    setScanning(true); setError('');
+    console.log('\n🔍 ═════════════════════════════════════════════════════');
+    console.log('🔍 handleRunAnalysis CALLED');
+    console.log('─────────────────────────────────────────────────────');
+    console.log('  owner:', owner);
+    console.log('  repo:', repo);
+    console.log('  githubToken present:', !!githubToken, '→', githubToken?.substring(0, 20));
+    console.log('  jwtToken present:', !!jwtToken, '→', jwtToken?.substring(0, 20));
+    console.log('  typeof analyze:', typeof analyze);
+    console.log('  phase3Loading:', phase3Loading);
+    console.log('  phase3Error:', phase3Error);
+    console.log('─────────────────────────────────────────────────────\n');
+    
+    setScanning(true);
+    setError('');
+    setAnalysis(null);
+    
     try {
-      if (repoInfo?.repoData && owner !== 'demo-user') {
-        const result = await runAIAnalysis(repoInfo.repoData);
-        setAnalysis(result);
-      } else {
-        await new Promise(r => setTimeout(r, 1800));
+      if (owner === 'demo-user') {
+        console.log('📊 Demo mode - using DEMO_ANALYSIS');
+        // Demo mode - show loading then demo data
+        await new Promise(r => setTimeout(r, 1500));
         setAnalysis(DEMO_ANALYSIS);
+        console.log('✅ Demo analysis set');
+      } else if (githubToken) {
+        // Phase 3: Real analysis with GitHub token
+        console.log('🚀 Phase 3: Calling analyze function...');
+        console.log('  Params:', { owner, repo });
+        const result = await analyze(owner, repo);
+        console.log('✅ Analysis result received:', result);
+        if (result) {
+          console.log('  → Setting analysis state and switching to overview tab');
+          setAnalysis(result);
+          setAnalysisRan(true);
+          setActiveTab('overview');
+        } else {
+          console.error('❌ Analysis returned null/falsy');
+          console.error('  → phase3Error:', phase3Error);
+          setError(phase3Error || 'Analysis failed. Please try again.');
+        }
+      } else {
+        console.warn('⚠️ No GitHub token available!');
+        console.warn('  → Cannot proceed with analysis');
+        setError('GitHub token not configured. Please add it in Settings.');
       }
-      setAnalysisRan(true);
-      setActiveTab('overview');
     } catch (e) {
-      console.error('Analysis error:', e.message);
-      // Silently fall back to demo data — no scary error banner
-      setAnalysis(DEMO_ANALYSIS);
-      setAnalysisRan(true);
+      console.error('❌ Analysis error caught in catch block:', e);
+      console.error('  → Error message:', e.message);
+      console.error('  → Error stack:', e.stack);
+      setError(e.message || 'Analysis failed');
     } finally {
+      console.log('🔍 Finally block: Setting scanning to false');
       setScanning(false);
     }
   };
+
+  // Watch for Phase 3 results
+  useEffect(() => {
+    if (phase3Result) {
+      setAnalysis(phase3Result);
+      setAnalysisRan(true);
+      setActiveTab('overview');
+      setScanning(false);
+    }
+  }, [phase3Result]);
 
   const rd = repoInfo?.repoData || {};
   const findings = analysis?.findings || [];
@@ -449,8 +460,8 @@ export default function RepoDetail() {
           </h1>
           {rd.private && <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 20, background: 'rgba(210,153,34,0.1)', color: '#d29922', border: '1px solid rgba(210,153,34,0.3)' }}>Private</span>}
           <div style={{ marginLeft: 'auto' }}>
-            <button onClick={handleRunAnalysis} disabled={scanning} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 6, background: scanning ? 'var(--bg-3)' : 'var(--purple)', border: `1px solid ${scanning ? 'var(--border)' : 'rgba(255,255,255,0.15)'}`, color: '#fff', fontSize: 13, fontWeight: 600, cursor: scanning ? 'not-allowed' : 'pointer', opacity: scanning ? 0.7 : 1 }}>
-              {scanning ? <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Analysing…</> : <><Zap style={{ width: 14, height: 14 }} /> {analysisRan ? 'Re-run Analysis' : 'Run AI Analysis'}</>}
+            <button onClick={handleRunAnalysis} disabled={phase3Loading} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 6, background: phase3Loading ? 'var(--bg-3)' : 'var(--purple)', border: `1px solid ${phase3Loading ? 'var(--border)' : 'rgba(255,255,255,0.15)'}`, color: '#fff', fontSize: 13, fontWeight: 600, cursor: phase3Loading ? 'not-allowed' : 'pointer', opacity: phase3Loading ? 0.7 : 1 }}>
+              {phase3Loading ? <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Analysing…</> : <><Zap style={{ width: 14, height: 14 }} /> {analysisRan ? 'Re-run Analysis' : 'Run AI Analysis'}</>}
             </button>
           </div>
         </div>
@@ -496,6 +507,16 @@ export default function RepoDetail() {
           </motion.div>
         )}
 
+        {error && !scanning && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 6, padding: 16, display: 'flex', alignItems: 'flex-start', gap: 12, color: '#f85149' }}>
+            <AlertTriangle style={{ width: 20, height: 20, flexShrink: 0, marginTop: 2 }} />
+            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Analysis Error</div>
+              <div style={{ fontSize: 12, color: 'rgba(248,81,73,0.8)' }}>{error}</div>
+            </div>
+          </motion.div>
+        )}
+
         {analysisRan && analysis && !scanning && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display:'flex',gap:4,flexWrap:'wrap' }}>
@@ -504,35 +525,26 @@ export default function RepoDetail() {
 
             {activeTab === 'overview' && (
               <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
-                <div style={{ display:'grid',gridTemplateColumns:'1fr 2fr',gap:16 }}>
-                  <HealthGauge score={analysis.health_score} loading={false} />
-                  <div style={{ background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:6,padding:20 }}>
-                    <div style={{ fontSize:11,color:'var(--text-3)',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:'monospace',marginBottom:16 }}>Score Breakdown</div>
-                    <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
-                      <ScoreBar label="Security"      score={analysis.security_score}      color="security" />
-                      <ScoreBar label="Code Quality"  score={analysis.quality_score}       color="quality" />
-                      <ScoreBar label="Dependencies"  score={analysis.dependency_score}    color="dependency" />
-                      <ScoreBar label="Documentation" score={analysis.documentation_score} color="documentation" />
-                    </div>
-                    <div style={{ marginTop:16,padding:12,background:'var(--bg-3)',border:'1px solid var(--border)',borderRadius:6 }}>
-                      <p style={{ margin:0,fontSize:12,color:'var(--text-2)',lineHeight:1.65 }}>{analysis.summary}</p>
-                    </div>
-                  </div>
-                </div>
-                <AgentLog externalLogs={analysis.agent_logs} />
-                <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12 }}>
-                  {[
-                    { label:'Critical', value:findings.filter(f=>f.severity==='CRITICAL').length, color:'#f85149' },
-                    { label:'High',     value:findings.filter(f=>f.severity==='HIGH').length,     color:'#e07b39' },
-                    { label:'Medium',   value:findings.filter(f=>f.severity==='MEDIUM').length,   color:'#d29922' },
-                    { label:'Low/Info', value:findings.filter(f=>['LOW','INFO'].includes(f.severity)).length, color:'#388bfd' },
-                  ].map(({ label, value, color }) => (
-                    <div key={label} style={{ background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:6,padding:'14px 16px',textAlign:'center' }}>
-                      <div style={{ fontSize:24,fontWeight:700,color,lineHeight:1 }}>{value}</div>
-                      <div style={{ fontSize:12,color:'var(--text-3)',marginTop:4 }}>{label} Issues</div>
-                    </div>
-                  ))}
-                </div>
+                {!analysis ? (
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 6, padding: 32, textAlign: 'center' }}>
+                    <Zap style={{ width: 32, height: 32, color: 'var(--purple)', marginBottom: 12, marginLeft: 'auto', marginRight: 'auto', opacity: 0.6 }} />
+                    <h3 style={{ margin: '12px 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Ready to analyze this repository?</h3>
+                    <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-2)', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>Click the "Run AI Analysis" button above to fetch repo files from GitHub and analyze code quality, security, and dependencies.</p>
+                    <button onClick={handleRunAnalysis} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 6, background: 'var(--purple)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      <Zap style={{ width: 16, height: 16 }} /> Start Analysis
+                    </button>
+                  </motion.div>
+                ) : (
+                  <>
+                    {phase3Error && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 6, padding: 12, display: 'flex', alignItems: 'center', gap: 8, color: '#f85149' }}>
+                        <AlertTriangle style={{ width: 16, height: 16 }} />
+                        <span style={{ fontSize: 12 }}>{phase3Error}</span>
+                      </motion.div>
+                    )}
+                    <Phase3ResultsPanel result={analysis} loading={phase3Loading} />
+                  </>
+                )}
               </div>
             )}
 
