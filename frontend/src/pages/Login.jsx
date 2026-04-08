@@ -542,7 +542,7 @@ export default function Login() {
     setLoading(true);
     
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://codecognition-backend.onrender.com';
       const response = await fetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -588,7 +588,7 @@ export default function Login() {
     setLoading(true);
     
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://codecognition-backend.onrender.com';
       const response = await fetch(`${backendUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

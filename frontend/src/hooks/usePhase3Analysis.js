@@ -41,7 +41,7 @@ export function usePhase3Analysis() {
     setError(null);
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://codecognition-backend.onrender.com';
       const endpoint = `${API_BASE}/api/repositories/analyze-github-repo`;
       
       console.log('🌐 Backend API Call:');
