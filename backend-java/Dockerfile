@@ -18,5 +18,9 @@ ENV DB_USER=root
 ENV DB_PASSWORD=password
 ENV DB_NAME=codecognition
 ENV JWT_SECRET=your-jwt-secret
+ENV SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+ENV SPRING_DATASOURCE_USERNAME=${DB_USER}
+ENV SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+ENV SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
-ENTRYPOINT ["java", "-jar", "app.jar", "--server.port=${PORT}"]
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT} --spring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD} --spring.jpa.hibernate.ddl-auto=update --jwt.secret=${JWT_SECRET}"]
