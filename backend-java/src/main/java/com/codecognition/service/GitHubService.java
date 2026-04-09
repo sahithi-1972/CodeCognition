@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
+@SuppressWarnings("unused")
 public class GitHubService {
     
     private final RestTemplate restTemplate = new RestTemplate();
@@ -89,7 +90,6 @@ public class GitHubService {
             }
             headers.set("User-Agent", "CodeCognition");
             
-            HttpEntity<String> entity = new HttpEntity<>(headers);
             return restTemplate.getForObject(url, String.class);
         } catch (Exception e) {
             return null; // File not found or error accessing
@@ -172,7 +172,6 @@ public class GitHubService {
             headers.set("Accept", "application/vnd.github.v3.raw");
             headers.set("User-Agent", "CodeCognition");
             
-            HttpEntity<String> entity = new HttpEntity<>(headers);
             return restTemplate.getForObject(url, String.class);
         } catch (Exception e) {
             return null;
@@ -189,7 +188,6 @@ public class GitHubService {
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", "CodeCognition");
             
-            HttpEntity<String> entity = new HttpEntity<>(headers);
             return restTemplate.getForObject(url, String.class);
         } catch (Exception e) {
             return null;

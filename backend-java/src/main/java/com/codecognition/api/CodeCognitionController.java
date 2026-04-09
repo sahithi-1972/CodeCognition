@@ -17,7 +17,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@CrossOrigin(origins = {"https://spiffy-syrniki-74f808.netlify.app", "http://localhost:5173", "http://localhost:3000"})
 @Tag(name = "Repository Analysis", description = "Repository analysis, health checks, and AI-powered code insights")
 public class CodeCognitionController {
 
@@ -25,12 +25,14 @@ public class CodeCognitionController {
     private AnalysisService analysisService;
 
     @Autowired
+    @SuppressWarnings("unused")
     private GitHubService gitHubService;
 
     @Autowired
     private AnalysisResultRepository analysisResultRepository;
 
-    private Map<String, AnalysisResult> cache = new HashMap<>();
+    @SuppressWarnings("unused")
+    private final Map<String, AnalysisResult> cache = new HashMap<>();
 
     @GetMapping("/ping")
     @Operation(summary = "Health check", description = "Check if the service is online and responsive")

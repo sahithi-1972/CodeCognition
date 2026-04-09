@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 
@@ -36,6 +41,8 @@ import com.codecognition.service.AnalysisService;
 
 @RestController
 @RequestMapping("/api/repositories")
+@CrossOrigin(origins = {"https://spiffy-syrniki-74f808.netlify.app", "http://localhost:5173", "http://localhost:3000"})
+@Tag(name = "Repository Management", description = "Manage repositories and run analyses")
 public class RepositoryController {
 
     @Autowired
@@ -58,6 +65,8 @@ public class RepositoryController {
      * POST /api/repositories/add
      */
     @PostMapping("/add")
+    @Operation(summary = "Add repository", description = "Add a new repository for analysis (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> addRepository(
             @RequestBody AddRepositoryRequest request,
             @RequestHeader("Authorization") String token) {
@@ -99,6 +108,8 @@ public class RepositoryController {
      * GET /api/repositories
      */
     @GetMapping
+    @Operation(summary = "Get repositories", description = "Retrieve all repositories for the authenticated user (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> getUserRepositories(
             @RequestHeader("Authorization") String token) {
         
@@ -134,6 +145,8 @@ public class RepositoryController {
      * GET /api/repositories/{id}
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Get repository details", description = "Retrieve details for a specific repository (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> getRepository(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
@@ -234,7 +247,9 @@ public class RepositoryController {
      * POST /api/repositories/test-github-token
      */
     @PostMapping("/test-github-token")
-    public ResponseEntity<?> testGitHubToken(
+    @Operation(summary = "Test GitHub token", description = "Verify that a GitHub personal access token is valid (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<?> testGithubToken(
             @RequestBody GitHubConnectRequest request) {
         try {
             String githubToken = request.getGithubToken();
@@ -282,31 +297,52 @@ public class RepositoryController {
      * POST /api/repositories/analyze-github-repo
      */
     @PostMapping("/analyze-github-repo")
+    @Operation(summary = "Analyze repository from GitHub", description = "Fetch repository details from GitHub and run comprehensive analysis (requires JWT token)")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Map<String, Object>> analyzeRepositoryFromGitHub(@Valid @RequestBody AnalyzeRepositoryRequest req) {
         try {
             String repoUrl = req.owner + "/" + req.repo;
+            System.out.println("\n[ANALYZE] ═══════════════════════════════════════════════════════════");
+            System.out.println("[ANALYZE] Repository Analysis Request");
+            System.out.println("  Owner: " + req.owner);
+            System.out.println("  Repo: " + req.repo);
+            System.out.println("  GitHub Token: " + (req.githubToken != null ? req.githubToken.substring(0, Math.min(20, req.githubToken.length())) + "..." : "null"));
+            System.out.println("─────────────────────────────────────────────────────────────────");
             
             // Fetch repository details from GitHub
+            System.out.println("[ANALYZE] Fetching repository details from GitHub...");
             Map<String, Object> repoDetails = githubService.getRepositoryDetails(req.owner, req.repo, req.githubToken);
+            System.out.println("[ANALYZE] ✅ Repository details fetched");
             
             // Fetch repository tree
+            System.out.println("[ANALYZE] Fetching repository tree...");
             List<String> files = githubService.getRepositoryTree(req.owner, req.repo, req.githubToken);
+            System.out.println("[ANALYZE] ✅ Found " + files.size() + " files");
             
             // Fetch key dependency files
+            System.out.println("[ANALYZE] Fetching key dependency files...");
             String depContent = githubService.getKeyFileContent(req.owner, req.repo, req.githubToken, "main");
+            System.out.println("[ANALYZE] ✅ Dependency content fetched");
             
             // Fetch README
+            System.out.println("[ANALYZE] Fetching README...");
             String readme = githubService.getReadme(req.owner, req.repo, req.githubToken);
             if (readme == null) readme = "";
+            System.out.println("[ANALYZE] ✅ README fetched (" + readme.length() + " chars)");
             
             // Fetch source files for deeper analysis
+            System.out.println("[ANALYZE] Fetching source files for analysis...");
             String sourceFiles = fetchSourceFilesForAnalysis(files, req.owner, req.repo, req.githubToken);
+            System.out.println("[ANALYZE] ✅ Source files fetched");
             
             // Check for tests, CI/CD, config files
+            System.out.println("[ANALYZE] Analyzing repository structure...");
             boolean hasTests = files.stream().anyMatch(f -> f.toLowerCase().contains("test") || f.contains("__tests__") || f.contains(".test.") || f.contains(".spec."));
             boolean hasCI = files.stream().anyMatch(f -> f.contains(".github/workflows") || f.contains(".gitlab-ci.yml") || f.contains(".circleci") || f.contains("Jenkinsfile"));
+            System.out.println("[ANALYZE] - Has tests: " + hasTests + ", Has CI/CD: " + hasCI);
             
             // Build RepoAnalyzeRequest for analysis service
+            System.out.println("[ANALYZE] Building analysis request...");
             RepoAnalyzeRequest analyzeReq = new RepoAnalyzeRequest();
             analyzeReq.owner = req.owner;
             analyzeReq.repo = req.repo;
@@ -321,21 +357,35 @@ public class RepositoryController {
             analyzeReq.has_ci = hasCI;
             analyzeReq.file_count = files.size();
             analyzeReq.is_empty = files.isEmpty();
+            System.out.println("[ANALYZE] ✅ Analysis request built");
             
             // Run analysis
+            System.out.println("[ANALYZE] Running code analysis...");
             AnalysisResult result = analysisService.analyzeRepository(analyzeReq);
+            System.out.println("[ANALYZE] ✅ Analysis complete");
+            System.out.println("  - Health Score: " + result.health_score);
+            System.out.println("  - Security Score: " + result.security_score);
+            System.out.println("  - Quality Score: " + result.quality_score);
+            System.out.println("  - Findings: " + (result.findings != null ? result.findings.size() : 0));
+            
             result.repo_url = repoUrl;
             
             // Save to database (update if exists, insert if new)
+            System.out.println("[ANALYZE] Saving results to database...");
             AnalysisResult existing = analysisResultRepository.findByRepoUrl(repoUrl);
             if (existing != null) {
                 // Update existing record
+                System.out.println("[ANALYZE] Updating existing analysis...");
                 result.id = existing.id;
                 result.created_at = existing.created_at; // Preserve original creation date
+            } else {
+                System.out.println("[ANALYZE] Creating new analysis record...");
             }
             analysisResultRepository.save(result);
+            System.out.println("[ANALYZE] ✅ Results saved");
             
             // Build response
+            System.out.println("[ANALYZE] Building response...");
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
             response.put("repo_url", repoUrl);
@@ -350,12 +400,21 @@ public class RepositoryController {
             response.put("findings", result.findings);
             response.put("engine", result._engine);
             
+            System.out.println("[ANALYZE] ✅ Response built successfully");
+            System.out.println("[ANALYZE] ═══════════════════════════════════════════════════════════\n");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("\n[ANALYZE] ❌ ERROR during analysis");
+            System.err.println("[ANALYZE] Exception Type: " + e.getClass().getName());
+            System.err.println("[ANALYZE] Message: " + e.getMessage());
+            System.err.println("[ANALYZE] Cause: " + e.getCause());
+            System.err.println("[ANALYZE] ═══════════════════════════════════════════════════════════\n");
+            
             Map<String, Object> error = new HashMap<>();
             error.put("status", "error");
             error.put("message", e.getMessage());
             error.put("repo", req.owner + "/" + req.repo);
+            error.put("exception", e.getClass().getSimpleName());
             return ResponseEntity.badRequest().body(error);
         }
     }

@@ -18,7 +18,7 @@ Your Phase 2 GitHub integration backend is **now running on port 8000**!
 - `repositories` table - Your GitHub repos tracked locally
 
 ### ✅ **Your GitHub PAT**
-- Token: `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`
+- Token: `[REDACTED - Use your personal access token from GitHub Settings]`
 - Username: `sahithi-1972`
 - Status: Ready to use
 
@@ -30,10 +30,10 @@ Your Phase 2 GitHub integration backend is **now running on port 8000**!
 1. Open: **http://localhost:8000/swagger-ui.html**
 2. Find `/api/repositories/github/repos` endpoint
 3. Click **"Try it out"**
-4. Paste this in the request body:
+4. Paste this in the request body (use your own GitHub PAT):
 ```json
 {
-  "githubToken": "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",
+  "githubToken": "[YOUR_GITHUB_PAT_HERE]",
   "username": "sahithi-1972"
 }
 ```
@@ -43,7 +43,7 @@ Your Phase 2 GitHub integration backend is **now running on port 8000**!
 ### **Option 2: Command Line (PowerShell)**
 ```powershell
 $body = @{
-  githubToken = "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"
+  githubToken = "[YOUR_GITHUB_PAT_HERE]"
   username = "sahithi-1972"
 } | ConvertTo-Json
 

@@ -12,7 +12,26 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CodeCognitionApplication {
 
     public static void main(String[] args) {
+        logEnvironmentStatus();
         SpringApplication.run(CodeCognitionApplication.class, args);
+    }
+
+    private static void logEnvironmentStatus() {
+        System.out.println("\n=== CodeCognition Backend Environment Status ===");
+        
+        String dbHost = System.getenv("DB_HOST");
+        String dbPort = System.getenv("DB_PORT");
+        String dbName = System.getenv("DB_NAME");
+        String jwtSecret = System.getenv("JWT_SECRET");
+        String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
+        
+        System.out.println("[✓] Backend starting...");
+        System.out.println("[DB] Host: " + (dbHost != null ? dbHost : "localhost (default)"));
+        System.out.println("[DB] Port: " + (dbPort != null ? dbPort : "3306 (default)"));
+        System.out.println("[DB] Database: " + (dbName != null ? dbName : "codecognition_db (default)"));
+        System.out.println("[JWT] Secret configured: " + (jwtSecret != null ? "✓" : "✗ (using default)"));
+        System.out.println("[CORS] Custom origins: " + (allowedOrigins != null ? allowedOrigins : "using defaults"));
+        System.out.println("==============================================\n");
     }
 
     @Bean

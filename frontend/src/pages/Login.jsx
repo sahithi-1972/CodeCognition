@@ -6,6 +6,29 @@ import { useAuth } from '../context/AuthContext';
 import { fetchGitHubUser } from '../hooks/useGitHub';
 import SyncOverlay from '../components/SyncOverlay';
 
+// Fetch with timeout helper
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      const timeoutError = new Error(`Request timeout after ${timeoutMs}ms`);
+      timeoutError.isTimeout = true;
+      throw timeoutError;
+    }
+    throw error;
+  }
+};
+
 function useGoogleAuth(onSuccess) {
   const initialized = useRef(false);
 
@@ -373,7 +396,8 @@ function EmailAuthForm({ email, setEmail, password, setPassword, showPass, setSh
           <button
             type="button"
             onClick={onSignUp}
-            className="rounded-full border border-slate-700 bg-slate-950/70 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50"
+            disabled={loading}
+            className="rounded-full border border-slate-700 bg-slate-950/70 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50 disabled:opacity-60"
           >
             Sign Up
           </button>
@@ -543,18 +567,39 @@ export default function Login() {
     
     try {
       const backendUrl = import.meta.env.VITE_API_URL || 'https://codecognition-backend.onrender.com';
-      const response = await fetch(`${backendUrl}/auth/login`, {
+      console.log('[SignIn] Attempting login to:', backendUrl);
+      
+      const response = await fetchWithTimeout(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-      });
+      }, 15000);
+
+      console.log('[SignIn] Response status:', response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Invalid email or password');
+        let errorMessage = 'Invalid email or password';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          console.error('[SignIn] Backend error:', errorData);
+        } catch (parseError) {
+          console.error('[SignIn] Error parsing error response:', parseError);
+          errorMessage = `Server error (${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+        console.log('[SignIn] Login successful for:', data.email);
+      } catch (parseError) {
+        console.error('[SignIn] Error parsing success response:', parseError);
+        setError('Server returned invalid response. Please try again.');
+        setLoading(false);
+        return;
+      }
       
       const profile = {
         name: data.fullName || email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
@@ -573,7 +618,18 @@ export default function Login() {
       
       startSync(profile, remember);
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('[SignIn] Error:', err);
+      let errorMsg = 'Login failed. Please try again.';
+      
+      if (err.isTimeout) {
+        errorMsg = 'Connection timeout. Check your internet or try again.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMsg = 'Network error. Check your connection and backend URL.';
+      } else {
+        errorMsg = err.message || errorMsg;
+      }
+      
+      setError(errorMsg);
       setLoading(false);
     }
   };
@@ -589,7 +645,9 @@ export default function Login() {
     
     try {
       const backendUrl = import.meta.env.VITE_API_URL || 'https://codecognition-backend.onrender.com';
-      const response = await fetch(`${backendUrl}/auth/register`, {
+      console.log('[SignUp] Attempting registration to:', backendUrl);
+      
+      const response = await fetchWithTimeout(`${backendUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -597,14 +655,33 @@ export default function Login() {
           password,
           fullName: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
         }),
-      });
+      }, 15000);
+
+      console.log('[SignUp] Response status:', response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Registration failed. Email might already be registered.');
+        let errorMessage = 'Registration failed. Email might already be registered.';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          console.error('[SignUp] Backend error:', errorData);
+        } catch (parseError) {
+          console.error('[SignUp] Error parsing error response:', parseError);
+          errorMessage = `Server error (${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+        console.log('[SignUp] Registration successful for:', data.email);
+      } catch (parseError) {
+        console.error('[SignUp] Error parsing success response:', parseError);
+        setError('Server returned invalid response. Please try again.');
+        setLoading(false);
+        return;
+      }
       
       const profile = {
         name: data.fullName,
@@ -618,7 +695,18 @@ export default function Login() {
       
       startSync(profile, remember);
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      console.error('[SignUp] Error:', err);
+      let errorMsg = 'Registration failed. Please try again.';
+      
+      if (err.isTimeout) {
+        errorMsg = 'Connection timeout. Check your internet or try again.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMsg = 'Network error. Check your connection and backend URL.';
+      } else {
+        errorMsg = err.message || errorMsg;
+      }
+      
+      setError(errorMsg);
       setLoading(false);
     }
   };
@@ -664,17 +752,26 @@ export default function Login() {
       setGhError('Verify your token first.');
       return;
     }
+    setError('');
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    startSync({
-      name: ghSuccess.name || ghSuccess.login,
-      email: ghSuccess.email || `${ghSuccess.login}@github.com`,
-      picture: ghSuccess.avatar_url,
-      given_name: ghSuccess.login,
-      verified_email: true,
-      githubToken: ghToken.trim(),
-      githubUser: ghSuccess,
-    }, remember);
+    console.log('[GitHub] Signing in user:', ghSuccess.login);
+    
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      startSync({
+        name: ghSuccess.name || ghSuccess.login,
+        email: ghSuccess.email || `${ghSuccess.login}@github.com`,
+        picture: ghSuccess.avatar_url,
+        given_name: ghSuccess.login,
+        verified_email: true,
+        githubToken: ghToken.trim(),
+        githubUser: ghSuccess,
+      }, remember);
+    } catch (err) {
+      console.error('[GitHub] Error during login:', err);
+      setError('GitHub login failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   const hasGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID';
