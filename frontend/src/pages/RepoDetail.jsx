@@ -328,7 +328,7 @@ const DEMO_ANALYSIS = {
 export default function RepoDetail() {
   const { owner, repo } = useParams();
   const navigate = useNavigate();
-  const { githubToken, token: jwtToken } = useAuth();
+  const { githubToken, jwtToken } = useAuth();
   const { analyze, loading: phase3Loading, error: phase3Error, result: phase3Result } = usePhase3Analysis();
 
   const [activeTab,   setActiveTab]   = useState('overview');
@@ -381,9 +381,8 @@ export default function RepoDetail() {
     console.log('  repo:', repo);
     console.log('  githubToken present:', !!githubToken, '→', githubToken?.substring(0, 20));
     console.log('  jwtToken present:', !!jwtToken, '→', jwtToken?.substring(0, 20));
+    console.log('  isDemoRepo:', owner === 'demo-user');
     console.log('  typeof analyze:', typeof analyze);
-    console.log('  phase3Loading:', phase3Loading);
-    console.log('  phase3Error:', phase3Error);
     console.log('─────────────────────────────────────────────────────\n');
     
     setScanning(true);
@@ -391,15 +390,10 @@ export default function RepoDetail() {
     setAnalysis(null);
     
     try {
-      if (owner === 'demo-user') {
-        console.log('📊 Demo mode - using DEMO_ANALYSIS');
-        // Demo mode - show loading then demo data
-        await new Promise(r => setTimeout(r, 1500));
-        setAnalysis(DEMO_ANALYSIS);
-        console.log('✅ Demo analysis set');
-      } else if (githubToken) {
-        // Phase 3: Real analysis with GitHub token
-        console.log('🚀 Phase 3: Calling analyze function...');
+      // For both demo repos and real repos, call the backend
+      // Backend will return mock data for demo repos, real data for real repos
+      if (owner === 'demo-user' || githubToken) {
+        console.log('🚀 Calling analyze function for', owner === 'demo-user' ? 'demo' : 'real', 'repository...');
         console.log('  Params:', { owner, repo });
         const result = await analyze(owner, repo);
         console.log('✅ Analysis result received:', result);
@@ -414,7 +408,7 @@ export default function RepoDetail() {
           setError(phase3Error || 'Analysis failed. Please try again.');
         }
       } else {
-        console.warn('⚠️ No GitHub token available!');
+        console.warn('⚠️ No GitHub token and not a demo repo!');
         console.warn('  → Cannot proceed with analysis');
         setError('GitHub token not configured. Please add it in Settings.');
       }

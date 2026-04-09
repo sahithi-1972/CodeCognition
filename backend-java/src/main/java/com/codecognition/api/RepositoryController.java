@@ -32,6 +32,7 @@ import com.codecognition.model.User;
 import com.codecognition.model.GitHubConnectRequest;
 import com.codecognition.model.AnalyzeRepositoryRequest;
 import com.codecognition.model.AnalysisResult;
+import com.codecognition.model.Finding;
 import com.codecognition.model.RepoAnalyzeRequest;
 import com.codecognition.repository.UserRepository;
 import com.codecognition.repository.AnalysisResultRepository;
@@ -43,6 +44,7 @@ import com.codecognition.service.AnalysisService;
 @RequestMapping("/api/repositories")
 @CrossOrigin(origins = {"https://spiffy-syrniki-74f808.netlify.app", "http://localhost:5173", "http://localhost:3000"})
 @Tag(name = "Repository Management", description = "Manage repositories and run analyses")
+@SuppressWarnings("unused")
 public class RepositoryController {
 
     @Autowired
@@ -293,6 +295,98 @@ public class RepositoryController {
     }
 
     /**
+     * Handle demo repository analysis - returns mock data without calling GitHub API
+     */
+    private ResponseEntity<Map<String, Object>> handleDemoRepositoryAnalysis(AnalyzeRepositoryRequest req) {
+        try {
+            String repoUrl = req.owner + "/" + req.repo;
+            
+            // Create demo analysis result
+            AnalysisResult result = new AnalysisResult();
+            result.repo_url = repoUrl;
+            result.health_score = 78;
+            result.security_score = 82;
+            result.quality_score = 75;
+            result.dependency_score = 70;
+            result.documentation_score = 85;
+            result.status = "success";
+            result.summary = "Demo repository analysis - Sample public repository '" + req.repo + "' by " + req.owner;
+            result._engine = "CodeCognition AI v3.3.0 (Demo Mode)";
+            
+            // Create sample findings
+            java.util.List<Finding> findings = new java.util.ArrayList<>();
+            
+            Finding finding1 = new Finding();
+            finding1.severity = "MEDIUM";
+            finding1.category = "Code Quality";
+            finding1.title = "Missing input validation";
+            finding1.description = "Some API endpoints lack proper input validation";
+            finding1.file = "src/api/controller.js";
+            finding1.fix = "Add comprehensive input validation using a validation library";
+            findings.add(finding1);
+            
+            Finding finding2 = new Finding();
+            finding2.severity = "LOW";
+            finding2.category = "Documentation";
+            finding2.title = "Incomplete API documentation";
+            finding2.description = "Some endpoints lack detailed documentation";
+            finding2.file = "README.md";
+            finding2.fix = "Add OpenAPI/Swagger documentation for all endpoints";
+            findings.add(finding2);
+            
+            Finding finding3 = new Finding();
+            finding3.severity = "INFO";
+            finding3.category = "Best Practice";
+            finding3.title = "Consider using async/await pattern";
+            finding3.description = "Some functions use callbacks instead of promises";
+            finding3.fix = "Refactor callbacks to use async/await for better readability";
+            findings.add(finding3);
+            
+            result.findings = findings;
+            
+            // Save to database
+            System.out.println("[ANALYZE] Saving demo analysis results to database...");
+            AnalysisResult existing = analysisResultRepository.findByRepoUrl(repoUrl);
+            if (existing != null) {
+                result.id = existing.id;
+                result.created_at = existing.created_at;
+                System.out.println("[ANALYZE] Updating existing analysis...");
+            } else {
+                System.out.println("[ANALYZE] Creating new analysis record...");
+            }
+            analysisResultRepository.save(result);
+            System.out.println("[ANALYZE] ✅ Results saved");
+            
+            // Build response
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("repo_url", repoUrl);
+            response.put("health_score", result.health_score);
+            response.put("security_score", result.security_score);
+            response.put("quality_score", result.quality_score);
+            response.put("dependency_score", result.dependency_score);
+            response.put("documentation_score", result.documentation_score);
+            response.put("status_text", result.status);
+            response.put("summary", result.summary);
+            response.put("findings_count", result.findings != null ? result.findings.size() : 0);
+            response.put("findings", result.findings);
+            response.put("engine", result._engine);
+            response.put("demo_mode", true);
+            
+            System.out.println("[ANALYZE] ✅ Demo analysis complete");
+            System.out.println("[ANALYZE] ═══════════════════════════════════════════════════════════\n");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("[ANALYZE] ❌ Error in demo analysis: " + e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", "Demo analysis failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+
+    /**
      * Analyze repository from GitHub - Phase 3
      * POST /api/repositories/analyze-github-repo
      */
@@ -308,6 +402,24 @@ public class RepositoryController {
             System.out.println("  Repo: " + req.repo);
             System.out.println("  GitHub Token: " + (req.githubToken != null ? req.githubToken.substring(0, Math.min(20, req.githubToken.length())) + "..." : "null"));
             System.out.println("─────────────────────────────────────────────────────────────────");
+            
+            // Check if this is a demo repository
+            boolean isDemoRepo = "demo-user".equalsIgnoreCase(req.owner);
+            
+            if (isDemoRepo && req.githubToken == null) {
+                System.out.println("[ANALYZE] Demo repository detected - using mock data");
+                return handleDemoRepositoryAnalysis(req);
+            }
+            
+            // For real repositories, GitHub token is required
+            if (!isDemoRepo && (req.githubToken == null || req.githubToken.trim().isEmpty())) {
+                System.out.println("[ANALYZE] ❌ Real repository requires GitHub token");
+                Map<String, Object> error = new HashMap<>();
+                error.put("status", "error");
+                error.put("message", "GitHub token is required for real repositories");
+                error.put("repo", repoUrl);
+                return ResponseEntity.badRequest().body(error);
+            }
             
             // Fetch repository details from GitHub
             System.out.println("[ANALYZE] Fetching repository details from GitHub...");

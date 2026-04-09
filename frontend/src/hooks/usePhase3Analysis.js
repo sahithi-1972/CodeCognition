@@ -23,6 +23,7 @@ export function usePhase3Analysis() {
     console.log('  githubToken present:', !!githubToken, githubToken?.substring(0, 20));
     console.log('─────────────────────────────────────────────────────\n');
 
+    // Check authentication
     if (!token) {
       const msg = 'Not authenticated. Please login first.';
       console.error('❌', msg);
@@ -30,7 +31,10 @@ export function usePhase3Analysis() {
       return null;
     }
 
-    if (!githubToken) {
+    // For demo repos, GitHub token is optional
+    // For real repos, GitHub token is required
+    const isDemoRepo = owner === 'demo-user';
+    if (!isDemoRepo && !githubToken) {
       const msg = 'GitHub token not configured. Please add your GitHub PAT in Settings.';
       console.error('❌', msg);
       setError(msg);
@@ -50,7 +54,11 @@ export function usePhase3Analysis() {
       console.log('  Headers:');
       console.log('    Content-Type: application/json');
       console.log('    Authorization: Bearer ' + token.substring(0, 20) + '...');
-      console.log('  Body:', { githubToken: githubToken.substring(0, 20) + '...', owner, repo });
+      console.log('  Body:', { 
+        githubToken: githubToken ? githubToken.substring(0, 20) + '...' : '(demo repo)',
+        owner, 
+        repo 
+      });
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -59,7 +67,7 @@ export function usePhase3Analysis() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          githubToken,
+          githubToken: githubToken || null,  // Can be null for demo repos
           owner,
           repo,
         }),

@@ -53,24 +53,33 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const session = readSession();
+    console.log('[AUTH] App loaded, readSession returned:', session);
     if (session) {
       setUser(session);
       setIsAuth(true);
       if (session.githubToken) setGhTok(session.githubToken);
       if (session.githubUser)  setGhUser(session.githubUser);
-      if (session.jwtToken)    setJwt(session.jwtToken);
+      if (session.jwtToken) {
+        console.log('[AUTH] Restoring JWT token from session:', session.jwtToken?.substring(0, 20) + '...');
+        setJwt(session.jwtToken);
+      }
       if (session.role)        setRole(session.role);
     }
     setLoad(false);
   }, []);
 
   const login = useCallback((profile, rememberMe = false) => {
+    console.log('[AUTH] login() called with profile:', profile);
     const session = writeSession(profile, rememberMe);
+    console.log('[AUTH] writeSession returned:', session);
     setUser(session);
     setIsAuth(true);
     if (profile.githubToken) setGhTok(profile.githubToken);
     if (profile.githubUser)  setGhUser(profile.githubUser);
-    if (profile.jwtToken)    setJwt(profile.jwtToken);
+    if (profile.jwtToken) {
+      console.log('[AUTH] Setting JWT token:', profile.jwtToken?.substring(0, 20) + '...');
+      setJwt(profile.jwtToken);
+    }
     if (profile.role)        setRole(profile.role);
   }, []);
 

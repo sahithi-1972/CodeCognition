@@ -104,7 +104,10 @@ public class GitHubService {
             String url = String.format("%s/repos/%s/%s", GITHUB_API_URL, owner, repo);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "token " + githubToken);
+            // Only add Authorization header if token is provided (optional for public repos)
+            if (githubToken != null && !githubToken.isEmpty()) {
+                headers.set("Authorization", "token " + githubToken);
+            }
             headers.set("Accept", "application/vnd.github.v3+json");
             headers.set("User-Agent", "CodeCognition");
             
@@ -138,7 +141,10 @@ public class GitHubService {
             String url = String.format("%s/repos/%s/%s/git/trees/HEAD?recursive=1", GITHUB_API_URL, owner, repo);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "token " + githubToken);
+            // Only add Authorization header if token is provided (optional for public repos)
+            if (githubToken != null && !githubToken.isEmpty()) {
+                headers.set("Authorization", "token " + githubToken);
+            }
             headers.set("Accept", "application/vnd.github.v3+json");
             headers.set("User-Agent", "CodeCognition");
             
@@ -168,7 +174,10 @@ public class GitHubService {
             String url = String.format("%s/repos/%s/%s/readme", GITHUB_API_URL, owner, repo);
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "token " + githubToken);
+            // Only add Authorization header if token is provided (optional for public repos)
+            if (githubToken != null && !githubToken.isEmpty()) {
+                headers.set("Authorization", "token " + githubToken);
+            }
             headers.set("Accept", "application/vnd.github.v3.raw");
             headers.set("User-Agent", "CodeCognition");
             
@@ -205,7 +214,10 @@ public class GitHubService {
                 String url = String.format("%s/repos/%s/%s/contents/%s", GITHUB_API_URL, owner, repo, file);
                 
                 HttpHeaders headers = new HttpHeaders();
-                headers.set("Authorization", "token " + githubToken);
+                // Only add Authorization header if token is provided (optional for public repos)
+                if (githubToken != null && !githubToken.isEmpty()) {
+                    headers.set("Authorization", "token " + githubToken);
+                }
                 headers.set("Accept", "application/vnd.github.v3.raw");
                 headers.set("User-Agent", "CodeCognition");
                 
